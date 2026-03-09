@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Zoo Treasure Hunt</string>
+    <string name="found_label">FOUND!</string>
+    <string name="edit_animal">Edit Sighting</string>
+    <string name="notes_hint">Observation Notes</string>
+    <string name="checkbox_found">Mark as Found</string>
+    <string name="save_btn">Save</string>
+    <string name="cancel_btn">Cancel</string>
+</resources>
