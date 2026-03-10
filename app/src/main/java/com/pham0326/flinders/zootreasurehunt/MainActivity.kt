@@ -11,7 +11,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -26,6 +29,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import com.pham0326.flinders.zootreasurehunt.ui.theme.ZooTreasureHuntTheme
 
 data class Sighting(
@@ -39,7 +46,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MaterialTheme {
+            ZooTreasureHuntTheme {
                 ZooApp()
             }
         }
@@ -48,6 +55,8 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun ZooApp() {
+    val navController = rememberNavController()
+
     var sightings by rememberSaveable {
         mutableStateOf(
             listOf(
@@ -63,26 +72,69 @@ fun ZooApp() {
     var selectedSighting by remember { mutableStateOf<Sighting?>(null) }
     var showDialog by remember { mutableStateOf(false) }
 
-    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(16.dp)
-        ) {
-            Text(
-                text = stringResource(id = R.string.app_name),
-                fontSize = 28.sp,
-                fontWeight = FontWeight.ExtraBold,
-                modifier = Modifier.padding(bottom = 24.dp)
-            )
+    val bottomItems = listOf(BottomNavItem.Home, BottomNavItem.About)
 
-            sightings.forEach { animal ->
-                AnimalCard(sighting = animal) {
-                    selectedSighting = animal
-                    showDialog = true
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    Scaffold(
+        bottomBar = {
+            NavigationBar {
+                bottomItems.forEach { item ->
+                    val isSelected = when (item) {
+                        BottomNavItem.Home -> currentRoute?.contains("HomeDestination") == true
+                        BottomNavItem.About -> currentRoute?.contains("AboutDestination") == true
+                    }
+
+                    NavigationBarItem(
+                        selected = isSelected,
+                        onClick = {
+                            when (item) {
+                                BottomNavItem.Home -> {
+                                    navController.navigate(HomeDestination) {
+                                        popUpTo(navController.graph.startDestinationId) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+
+                                BottomNavItem.About -> {
+                                    navController.navigate(AboutDestination) {
+                                        popUpTo(navController.graph.startDestinationId) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            }
+                        },
+                        icon = { Icon(item.icon, contentDescription = item.label) },
+                        label = { Text(item.label) }
+                    )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = HomeDestination,
+            modifier = Modifier.padding(innerPadding)
+        ) {
+            composable<HomeDestination> {
+                ListScreen(
+                    sightings = sightings,
+                    onEditClick = { animal ->
+                        selectedSighting = animal
+                        showDialog = true
+                    }
+                )
+            }
+
+            composable<AboutDestination> {
+                AboutScreen()
             }
         }
 
@@ -91,7 +143,7 @@ fun ZooApp() {
                 EditSightingDialog(
                     sighting = sighting,
                     onDismiss = { showDialog = false },
-                    onSave = { updatedSighting ->
+                    onSave = { updatedSighting: Sighting ->
                         sightings = sightings.map {
                             if (it.name == updatedSighting.name) updatedSighting else it
                         }
@@ -125,6 +177,7 @@ fun AnimalCard(sighting: Sighting, onClick: () -> Unit) {
                     fontWeight = FontWeight.Bold,
                     color = textColor
                 )
+
                 if (sighting.isFound && sighting.notes.isNotEmpty()) {
                     Text(
                         text = sighting.notes,
@@ -164,6 +217,7 @@ fun EditSightingDialog(
                     onValueChange = { notesText = it },
                     label = { Text(stringResource(id = R.string.notes_hint)) }
                 )
+
                 Row(
                     modifier = Modifier.padding(top = 16.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -177,9 +231,11 @@ fun EditSightingDialog(
             }
         },
         confirmButton = {
-            Button(onClick = {
-                onSave(sighting.copy(isFound = isFoundChecked, notes = notesText))
-            }) {
+            Button(
+                onClick = {
+                    onSave(sighting.copy(isFound = isFoundChecked, notes = notesText))
+                }
+            ) {
                 Text(text = stringResource(id = R.string.save_btn))
             }
         },
