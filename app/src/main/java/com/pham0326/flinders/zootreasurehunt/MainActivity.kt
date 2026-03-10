@@ -21,9 +21,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,12 +38,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.pham0326.flinders.zootreasurehunt.ui.theme.ZooTreasureHuntTheme
-
-data class Sighting(
-    val name: String,
-    val isFound: Boolean = false,
-    val notes: String = ""
-)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,15 +55,13 @@ class MainActivity : ComponentActivity() {
 fun ZooApp() {
     val navController = rememberNavController()
 
-    var sightings by rememberSaveable {
-        mutableStateOf(
-            listOf(
-                Sighting("Lion"),
-                Sighting("Red Panda"),
-                Sighting("Giraffe"),
-                Sighting("Kangaroo"),
-                Sighting("Penguin")
-            )
+    val sightings = remember {
+        mutableStateListOf(
+            Sighting(name = "Lion"),
+            Sighting(name = "Red Panda"),
+            Sighting(name = "Giraffe"),
+            Sighting(name = "Kangaroo"),
+            Sighting(name = "Penguin")
         )
     }
 
@@ -148,6 +140,9 @@ fun ZooApp() {
                     onEditClick = { animal ->
                         selectedSighting = animal
                         showDialog = true
+                    },
+                    onDelete = { animal ->
+                        sightings.remove(animal)
                     }
                 )
             }
@@ -162,9 +157,10 @@ fun ZooApp() {
                 EditSightingDialog(
                     sighting = sighting,
                     onDismiss = { showDialog = false },
-                    onSave = { updatedSighting ->
-                        sightings = sightings.map {
-                            if (it.name == updatedSighting.name) updatedSighting else it
+                    onSave = { updated ->
+                        val index = sightings.indexOfFirst { it.id == updated.id }
+                        if (index != -1) {
+                            sightings[index] = updated
                         }
                         showDialog = false
                     }
