@@ -6,4 +6,8 @@
     <string name="checkbox_found">Mark as Found</string>
     <string name="save_btn">Save</string>
     <string name="cancel_btn">Cancel</string>
+
+    <string name="home_tab">Home</string>
+    <string name="about_tab">About</string>
+    <string name="about_text">Zoo Treasure Hunt\nCreated by\nDora Pham</string>
 </resources>
