@@ -1,9 +1,14 @@
 package com.pham0326.flinders.zootreasurehunt
 
+import android.Manifest
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.AlertDialog
@@ -19,42 +24,25 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.pham0326.flinders.zootreasurehunt.ui.theme.ZooTreasureHuntTheme
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.workDataOf
-import com.pham0326.flinders.zootreasurehunt.worker.CongratulationWorker
-import androidx.compose.ui.platform.LocalContext
 import coil3.compose.AsyncImage
-import androidx.compose.foundation.layout.size
-import com.pham0326.flinders.zootreasurehunt.data.SightingRepository
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.pham0326.flinders.zootreasurehunt.ui.theme.ZooTreasureHuntTheme
+import com.pham0326.flinders.zootreasurehunt.utils.FileUtils
 import com.pham0326.flinders.zootreasurehunt.viewmodel.ZooViewModel
 
 class MainActivity : ComponentActivity() {
@@ -62,7 +50,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MaterialTheme {
+            ZooTreasureHuntTheme {
                 ZooApp()
             }
         }
@@ -71,27 +59,31 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun ZooApp() {
-    val context = LocalContext.current
+    val navController = rememberNavController()
     val viewModel: ZooViewModel = viewModel()
     val sightings by viewModel.sightings.collectAsStateWithLifecycle()
+    val isSortByName by viewModel.isSortByName.collectAsState(initial = true)
+
+    var selectedSighting by remember { mutableStateOf<Sighting?>(null) }
+    var showDialog by remember { mutableStateOf(false) }
+
+    val bottomItems = listOf(
+        BottomNavItem.Home,
+        BottomNavItem.Settings,
+        BottomNavItem.About
+    )
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { }
     )
-    val navController = rememberNavController()
-
-    var selectedSighting by remember { mutableStateOf<Sighting?>(null) }
-    var showDialog by remember { mutableStateOf(false) }
-
-    val bottomItems = listOf(BottomNavItem.Home, BottomNavItem.About)
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
     LaunchedEffect(Unit) {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 
@@ -103,6 +95,8 @@ fun ZooApp() {
                     val isSelected = when (item) {
                         BottomNavItem.Home ->
                             currentRoute?.contains("HomeDestination") == true
+                        BottomNavItem.Settings ->
+                            currentRoute?.contains("SettingsDestination") == true
                         BottomNavItem.About ->
                             currentRoute?.contains("AboutDestination") == true
                     }
@@ -120,7 +114,15 @@ fun ZooApp() {
                                         restoreState = true
                                     }
                                 }
-
+                                BottomNavItem.Settings -> {
+                                    navController.navigate(SettingsDestination) {
+                                        popUpTo(navController.graph.startDestinationId) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
                                 BottomNavItem.About -> {
                                     navController.navigate(AboutDestination) {
                                         popUpTo(navController.graph.startDestinationId) {
@@ -142,11 +144,11 @@ fun ZooApp() {
                             Text(
                                 text = when (item) {
                                     BottomNavItem.Home -> stringResource(R.string.home_tab)
+                                    BottomNavItem.Settings -> stringResource(R.string.settings_tab)
                                     BottomNavItem.About -> stringResource(R.string.about_tab)
                                 }
                             )
                         }
-
                     )
                 }
             }
@@ -167,6 +169,13 @@ fun ZooApp() {
                     onDelete = { animal ->
                         viewModel.deleteSighting(animal)
                     }
+                )
+            }
+
+            composable<SettingsDestination> {
+                SettingsScreen(
+                    isSortByName = isSortByName,
+                    onSortChange = { viewModel.toggleSortOrder(it) }
                 )
             }
 
@@ -194,6 +203,7 @@ fun ZooApp() {
 fun AnimalCard(sighting: Sighting, onClick: () -> Unit) {
     val cardColor = if (sighting.isFound) Color(0xFFE8F5E9) else Color(0xFFF5F5F5)
     val textColor = if (sighting.isFound) Color(0xFF2E7D32) else Color.Black
+    val imageModel = sighting.photoPath ?: sighting.imageUrl
 
     Card(
         modifier = Modifier
@@ -206,7 +216,7 @@ fun AnimalCard(sighting: Sighting, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
-                model = sighting.imageUrl,
+                model = imageModel,
                 contentDescription = sighting.name,
                 modifier = Modifier
                     .size(64.dp)
@@ -250,6 +260,19 @@ fun EditSightingDialog(
     var notesText by remember { mutableStateOf(sighting.notes) }
     var isFoundChecked by remember { mutableStateOf(sighting.isFound) }
 
+    val context = LocalContext.current
+    val fileUtils = remember { FileUtils(context) }
+    var currentPhotoPath by remember { mutableStateOf(sighting.photoPath) }
+    var tempPhotoUri by remember { mutableStateOf<Uri?>(null) }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && tempPhotoUri != null) {
+            currentPhotoPath = tempPhotoUri.toString()
+        }
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = stringResource(id = R.string.edit_animal)) },
@@ -271,6 +294,31 @@ fun EditSightingDialog(
                     )
                     Text(text = stringResource(id = R.string.checkbox_found))
                 }
+
+                Button(
+                    onClick = {
+                        val file = fileUtils.createImageFile()
+                        val uri = fileUtils.getUriForFile(file)
+                        tempPhotoUri = uri
+                        cameraLauncher.launch(uri)
+                    },
+                    modifier = Modifier.padding(top = 16.dp)
+                ) {
+                    Text(
+                        text = if (currentPhotoPath == null) {
+                            stringResource(R.string.take_photo)
+                        } else {
+                            stringResource(R.string.retake_photo)
+                        }
+                    )
+                }
+
+                if (currentPhotoPath != null) {
+                    Text(
+                        text = stringResource(R.string.photo_attached),
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
             }
         },
         confirmButton = {
@@ -279,7 +327,8 @@ fun EditSightingDialog(
                     onSave(
                         sighting.copy(
                             isFound = isFoundChecked,
-                            notes = notesText
+                            notes = notesText,
+                            photoPath = currentPhotoPath
                         )
                     )
                 }
@@ -296,7 +345,6 @@ fun EditSightingDialog(
 }
 
 @Preview(showBackground = true)
-
 @Composable
 fun ZooAppPreview() {
     ZooTreasureHuntTheme {
