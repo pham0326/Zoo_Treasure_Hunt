@@ -20,6 +20,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -38,6 +39,23 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.pham0326.flinders.zootreasurehunt.ui.theme.ZooTreasureHuntTheme
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
+import com.pham0326.flinders.zootreasurehunt.worker.CongratulationWorker
+import androidx.compose.ui.platform.LocalContext
+import coil3.compose.AsyncImage
+import androidx.compose.foundation.layout.size
+import com.pham0326.flinders.zootreasurehunt.data.SightingRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.pham0326.flinders.zootreasurehunt.viewmodel.ZooViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,17 +71,15 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun ZooApp() {
-    val navController = rememberNavController()
+    val context = LocalContext.current
+    val viewModel: ZooViewModel = viewModel()
+    val sightings by viewModel.sightings.collectAsStateWithLifecycle()
 
-    val sightings = remember {
-        mutableStateListOf(
-            Sighting(name = "Lion"),
-            Sighting(name = "Red Panda"),
-            Sighting(name = "Giraffe"),
-            Sighting(name = "Kangaroo"),
-            Sighting(name = "Penguin")
-        )
-    }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { }
+    )
+    val navController = rememberNavController()
 
     var selectedSighting by remember { mutableStateOf<Sighting?>(null) }
     var showDialog by remember { mutableStateOf(false) }
@@ -72,6 +88,12 @@ fun ZooApp() {
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+
+    LaunchedEffect(Unit) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -124,6 +146,7 @@ fun ZooApp() {
                                 }
                             )
                         }
+
                     )
                 }
             }
@@ -142,7 +165,7 @@ fun ZooApp() {
                         showDialog = true
                     },
                     onDelete = { animal ->
-                        sightings.remove(animal)
+                        viewModel.deleteSighting(animal)
                     }
                 )
             }
@@ -158,10 +181,7 @@ fun ZooApp() {
                     sighting = sighting,
                     onDismiss = { showDialog = false },
                     onSave = { updated ->
-                        val index = sightings.indexOfFirst { it.id == updated.id }
-                        if (index != -1) {
-                            sightings[index] = updated
-                        }
+                        viewModel.updateSighting(updated)
                         showDialog = false
                     }
                 )
@@ -185,6 +205,14 @@ fun AnimalCard(sighting: Sighting, onClick: () -> Unit) {
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            AsyncImage(
+                model = sighting.imageUrl,
+                contentDescription = sighting.name,
+                modifier = Modifier
+                    .size(64.dp)
+                    .padding(end = 8.dp)
+            )
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = sighting.name,
@@ -268,6 +296,7 @@ fun EditSightingDialog(
 }
 
 @Preview(showBackground = true)
+
 @Composable
 fun ZooAppPreview() {
     ZooTreasureHuntTheme {
