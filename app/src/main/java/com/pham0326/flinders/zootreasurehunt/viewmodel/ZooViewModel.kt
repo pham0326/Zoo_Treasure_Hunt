@@ -17,11 +17,13 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import com.pham0326.flinders.zootreasurehunt.model.ZooUiState
 
-class ZooViewModel(application: Application) : AndroidViewModel(application) {
+class ZooViewModel(
+    application: Application,
+    private val repository: SightingRepository,
+    private val settingsRepository: SettingsRepository
+) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow(ZooUiState())
     val uiState: StateFlow<ZooUiState> = _uiState.asStateFlow()
-    private val repository = SightingRepository(application)
-    private val settingsRepository = SettingsRepository(application)
     private val workManager = WorkManager.getInstance(application)
 
     private val _rawSightings = MutableStateFlow<List<Sighting>>(emptyList())
@@ -62,26 +64,17 @@ class ZooViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun updateSighting(updated: Sighting) {
-        val oldSighting = _rawSightings.value.find { it.id == updated.id }
-
-        if (updated.isFound && oldSighting?.isFound == false) {
-            val workRequest = OneTimeWorkRequestBuilder<CongratulationWorker>()
-                .setInputData(workDataOf("ANIMAL_NAME" to updated.name))
-                .build()
-
-            workManager.enqueue(workRequest)
+        viewModelScope.launch {
+            repository.updateSighting(updated)
+            _rawSightings.value = repository.loadSightings()
         }
-
-        val newList = _rawSightings.value.map {
-            if (it.id == updated.id) updated else it
-        }
-
-        updateAndSave(newList)
     }
 
     fun deleteSighting(sighting: Sighting) {
-        val newList = _rawSightings.value.filter { it.id != sighting.id }
-        updateAndSave(newList)
+        viewModelScope.launch {
+            repository.deleteSighting(sighting)
+            _rawSightings.value = repository.loadSightings()
+        }
     }
 
     fun toggleSortOrder(sortByName: Boolean) {

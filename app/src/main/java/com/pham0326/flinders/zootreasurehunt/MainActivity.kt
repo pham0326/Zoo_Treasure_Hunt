@@ -1,7 +1,7 @@
 package com.pham0326.flinders.zootreasurehunt
 
 import android.Manifest
-import android.net.Uri
+import android.app.Application
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -9,69 +9,79 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import coil3.compose.AsyncImage
-import com.pham0326.flinders.zootreasurehunt.model.Sighting
+import com.pham0326.flinders.zootreasurehunt.data.FileSightingRepository
+import com.pham0326.flinders.zootreasurehunt.data.SettingsRepository
+import com.pham0326.flinders.zootreasurehunt.data.SightingRepository
 import com.pham0326.flinders.zootreasurehunt.navigation.AboutDestination
 import com.pham0326.flinders.zootreasurehunt.navigation.BottomNavItem
 import com.pham0326.flinders.zootreasurehunt.navigation.HomeDestination
 import com.pham0326.flinders.zootreasurehunt.navigation.SettingsDestination
+import com.pham0326.flinders.zootreasurehunt.ui.components.EditSightingDialog
+import com.pham0326.flinders.zootreasurehunt.ui.screens.AboutScreen
+import com.pham0326.flinders.zootreasurehunt.ui.screens.ListScreen
 import com.pham0326.flinders.zootreasurehunt.ui.screens.SettingsScreen
 import com.pham0326.flinders.zootreasurehunt.ui.theme.ZooTreasureHuntTheme
-import com.pham0326.flinders.zootreasurehunt.utils.FileUtils
 import com.pham0326.flinders.zootreasurehunt.viewmodel.ZooViewModel
-import com.pham0326.flinders.zootreasurehunt.ui.components.EditSightingDialog
-import com.pham0326.flinders.zootreasurehunt.ui.screens.ListScreen
-import com.pham0326.flinders.zootreasurehunt.ui.screens.AboutScreen
-import com.pham0326.flinders.zootreasurehunt.ui.screens.SettingsScreen
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val repository = FileSightingRepository(applicationContext)
+        val settingsRepository = SettingsRepository(applicationContext)
+
         setContent {
             ZooTreasureHuntTheme {
-                ZooApp()
+                ZooApp(
+                    repository = repository,
+                    settingsRepository = settingsRepository
+                )
             }
         }
     }
 }
 
 @Composable
-fun ZooApp() {
+fun ZooApp(
+    repository: SightingRepository,
+    settingsRepository: SettingsRepository
+) {
     val navController = rememberNavController()
-    val viewModel: ZooViewModel = viewModel()
+    val context = LocalContext.current
+
+    val viewModel: ZooViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return ZooViewModel(
+                    repository = repository,
+                    settingsRepository = settingsRepository,
+                    application = context.applicationContext as Application
+                ) as T
+            }
+        }
+    )
     val uiState by viewModel.uiState.collectAsState()
 
     val bottomItems = listOf(
@@ -207,11 +217,3 @@ fun ZooApp() {
     }
 }
 
-
-@Preview(showBackground = true)
-@Composable
-fun ZooAppPreview() {
-    ZooTreasureHuntTheme {
-        ZooApp()
-    }
-}
