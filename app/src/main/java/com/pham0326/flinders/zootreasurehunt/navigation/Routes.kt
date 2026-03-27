@@ -1,4 +1,4 @@
-package com.pham0326.flinders.zootreasurehunt
+package com.pham0326.flinders.zootreasurehunt.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home

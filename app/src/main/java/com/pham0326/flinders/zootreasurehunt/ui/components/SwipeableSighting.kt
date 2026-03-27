@@ -1,4 +1,4 @@
-package com.pham0326.flinders.zootreasurehunt
+package com.pham0326.flinders.zootreasurehunt.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -18,6 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.pham0326.flinders.zootreasurehunt.model.Sighting
+import com.pham0326.flinders.zootreasurehunt.ui.components.AnimalCard
 
 @Composable
 fun SwipeableSighting(
