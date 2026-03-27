@@ -1,45 +1,37 @@
 package com.pham0326.flinders.zootreasurehunt.viewmodel
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.workDataOf
-import com.pham0326.flinders.zootreasurehunt.model.Sighting
 import com.pham0326.flinders.zootreasurehunt.data.SettingsRepository
 import com.pham0326.flinders.zootreasurehunt.data.SightingRepository
-import com.pham0326.flinders.zootreasurehunt.worker.CongratulationWorker
+import com.pham0326.flinders.zootreasurehunt.model.Sighting
+import com.pham0326.flinders.zootreasurehunt.model.ZooUiState
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import com.pham0326.flinders.zootreasurehunt.model.ZooUiState
 
-class ZooViewModel(
-    application: Application,
-    private val repository: SightingRepository,
+@HiltViewModel
+class ZooViewModel @Inject constructor(
+    private val sightingRepository: SightingRepository,
     private val settingsRepository: SettingsRepository
-) : AndroidViewModel(application) {
+) : ViewModel() {
+
     private val _uiState = MutableStateFlow(ZooUiState())
     val uiState: StateFlow<ZooUiState> = _uiState.asStateFlow()
-    private val workManager = WorkManager.getInstance(application)
 
     private val _rawSightings = MutableStateFlow<List<Sighting>>(emptyList())
-    private val _sightings = MutableStateFlow<List<Sighting>>(emptyList())
-    val sightings: StateFlow<List<Sighting>> = _sightings.asStateFlow()
-
-    val isSortByName = settingsRepository.sortByNameFlow
 
     init {
         viewModelScope.launch {
-            _rawSightings.value = repository.loadSightings()
+            _rawSightings.value = sightingRepository.loadSightings()
         }
 
         viewModelScope.launch {
-            combine(_rawSightings, settingsRepository.sortByNameFlow)
-            { list, sortByName ->
+            combine(_rawSightings, settingsRepository.sortByNameFlow) { list, sortByName ->
                 val sortedList = if (sortByName) {
                     list.sortedBy { it.name }
                 } else {
@@ -56,24 +48,17 @@ class ZooViewModel(
         }
     }
 
-    private fun updateAndSave(newList: List<Sighting>) {
-        _rawSightings.value = newList
-        viewModelScope.launch {
-            repository.saveSightings(newList)
-        }
-    }
-
     fun updateSighting(updated: Sighting) {
         viewModelScope.launch {
-            repository.updateSighting(updated)
-            _rawSightings.value = repository.loadSightings()
+            sightingRepository.updateSighting(updated)
+            _rawSightings.value = sightingRepository.loadSightings()
         }
     }
 
     fun deleteSighting(sighting: Sighting) {
         viewModelScope.launch {
-            repository.deleteSighting(sighting)
-            _rawSightings.value = repository.loadSightings()
+            sightingRepository.deleteSighting(sighting)
+            _rawSightings.value = sightingRepository.loadSightings()
         }
     }
 
@@ -82,6 +67,7 @@ class ZooViewModel(
             settingsRepository.setSortByName(sortByName)
         }
     }
+
     fun selectSightingForEdit(sighting: Sighting?) {
         _uiState.value = _uiState.value.copy(
             selectedSighting = sighting,
@@ -96,4 +82,3 @@ class ZooViewModel(
         )
     }
 }
-

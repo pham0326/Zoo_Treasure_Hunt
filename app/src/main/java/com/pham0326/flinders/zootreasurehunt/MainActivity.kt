@@ -1,7 +1,6 @@
 package com.pham0326.flinders.zootreasurehunt
 
 import android.Manifest
-import android.app.Application
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -21,18 +20,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.pham0326.flinders.zootreasurehunt.data.FileSightingRepository
-import com.pham0326.flinders.zootreasurehunt.data.SettingsRepository
-import com.pham0326.flinders.zootreasurehunt.data.SightingRepository
 import com.pham0326.flinders.zootreasurehunt.navigation.AboutDestination
 import com.pham0326.flinders.zootreasurehunt.navigation.BottomNavItem
 import com.pham0326.flinders.zootreasurehunt.navigation.HomeDestination
@@ -43,45 +36,26 @@ import com.pham0326.flinders.zootreasurehunt.ui.screens.ListScreen
 import com.pham0326.flinders.zootreasurehunt.ui.screens.SettingsScreen
 import com.pham0326.flinders.zootreasurehunt.ui.theme.ZooTreasureHuntTheme
 import com.pham0326.flinders.zootreasurehunt.viewmodel.ZooViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val repository = FileSightingRepository(applicationContext)
-        val settingsRepository = SettingsRepository(applicationContext)
-
         setContent {
             ZooTreasureHuntTheme {
-                ZooApp(
-                    repository = repository,
-                    settingsRepository = settingsRepository
-                )
+                ZooApp()
             }
         }
     }
 }
 
 @Composable
-fun ZooApp(
-    repository: SightingRepository,
-    settingsRepository: SettingsRepository
-) {
+fun ZooApp() {
     val navController = rememberNavController()
-    val context = LocalContext.current
-
-    val viewModel: ZooViewModel = viewModel(
-        factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return ZooViewModel(
-                    repository = repository,
-                    settingsRepository = settingsRepository,
-                    application = context.applicationContext as Application
-                ) as T
-            }
-        }
-    )
+    val viewModel = viewModel<ZooViewModel>()
     val uiState by viewModel.uiState.collectAsState()
 
     val bottomItems = listOf(
@@ -216,4 +190,3 @@ fun ZooApp(
         }
     }
 }
-
