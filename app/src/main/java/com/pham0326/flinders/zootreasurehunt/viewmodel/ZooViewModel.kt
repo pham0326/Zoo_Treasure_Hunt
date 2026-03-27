@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
-import com.pham0326.flinders.zootreasurehunt.Sighting
+import com.pham0326.flinders.zootreasurehunt.model.Sighting
 import com.pham0326.flinders.zootreasurehunt.data.SettingsRepository
 import com.pham0326.flinders.zootreasurehunt.data.SightingRepository
 import com.pham0326.flinders.zootreasurehunt.worker.CongratulationWorker
@@ -15,9 +15,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import com.pham0326.flinders.zootreasurehunt.model.ZooUiState
 
 class ZooViewModel(application: Application) : AndroidViewModel(application) {
-
+    private val _uiState = MutableStateFlow(ZooUiState())
+    val uiState: StateFlow<ZooUiState> = _uiState.asStateFlow()
     private val repository = SightingRepository(application)
     private val settingsRepository = SettingsRepository(application)
     private val workManager = WorkManager.getInstance(application)
@@ -34,14 +36,20 @@ class ZooViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         viewModelScope.launch {
-            combine(_rawSightings, settingsRepository.sortByNameFlow) { list, sortByName ->
-                if (sortByName) {
+            combine(_rawSightings, settingsRepository.sortByNameFlow)
+            { list, sortByName ->
+                val sortedList = if (sortByName) {
                     list.sortedBy { it.name }
                 } else {
                     list.sortedByDescending { it.isFound }
                 }
-            }.collect { sortedList ->
-                _sightings.value = sortedList
+
+                _uiState.value.copy(
+                    sightings = sortedList,
+                    isSortByName = sortByName
+                )
+            }.collect { newState ->
+                _uiState.value = newState
             }
         }
     }
@@ -81,4 +89,18 @@ class ZooViewModel(application: Application) : AndroidViewModel(application) {
             settingsRepository.setSortByName(sortByName)
         }
     }
+    fun selectSightingForEdit(sighting: Sighting?) {
+        _uiState.value = _uiState.value.copy(
+            selectedSighting = sighting,
+            isDialogVisible = sighting != null
+        )
+    }
+
+    fun dismissDialog() {
+        _uiState.value = _uiState.value.copy(
+            selectedSighting = null,
+            isDialogVisible = false
+        )
+    }
 }
+

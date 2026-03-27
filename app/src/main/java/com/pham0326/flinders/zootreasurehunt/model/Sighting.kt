@@ -1,7 +1,7 @@
-package com.pham0326.flinders.zootreasurehunt
+package com.pham0326.flinders.zootreasurehunt.model
 
-import java.util.UUID
 import kotlinx.serialization.Serializable
+import java.util.UUID
 
 @Serializable
 data class Sighting(
