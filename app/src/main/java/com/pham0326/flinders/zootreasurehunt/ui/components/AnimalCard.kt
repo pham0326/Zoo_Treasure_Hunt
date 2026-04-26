@@ -29,12 +29,14 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.pham0326.flinders.zootreasurehunt.R
 import com.pham0326.flinders.zootreasurehunt.model.Sighting
+import com.pham0326.flinders.zootreasurehunt.ui.theme.LocalZooSpacing
 
 @Composable
 fun AnimalCard(
     sighting: Sighting,
     onClick: () -> Unit
 ) {
+    val spacing = LocalZooSpacing.current
     val animatedCardColor by animateColorAsState(
         targetValue = if (sighting.isFound) Color(0xFFE8F5E9) else Color(0xFFF5F5F5),
         animationSpec = spring(),
@@ -57,7 +59,7 @@ fun AnimalCard(
         colors = CardDefaults.cardColors(containerColor = animatedCardColor)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(spacing.medium),
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
@@ -65,7 +67,7 @@ fun AnimalCard(
                 contentDescription = sighting.name,
                 modifier = Modifier
                     .size(64.dp)
-                    .padding(end = 8.dp)
+                    .padding(end = spacing.small)
             )
 
             Column(modifier = Modifier.weight(1f)) {
