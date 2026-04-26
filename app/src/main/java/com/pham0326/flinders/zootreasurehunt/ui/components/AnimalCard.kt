@@ -1,5 +1,13 @@
 package com.pham0326.flinders.zootreasurehunt.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,6 +18,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -20,21 +29,37 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.pham0326.flinders.zootreasurehunt.R
 import com.pham0326.flinders.zootreasurehunt.model.Sighting
+import com.pham0326.flinders.zootreasurehunt.ui.theme.LocalZooSpacing
 
 @Composable
-fun AnimalCard(sighting: Sighting, onClick: () -> Unit) {
-    val cardColor = if (sighting.isFound) Color(0xFFE8F5E9) else Color(0xFFF5F5F5)
-    val textColor = if (sighting.isFound) Color(0xFF2E7D32) else Color.Black
+fun AnimalCard(
+    sighting: Sighting,
+    onClick: () -> Unit
+) {
+    val spacing = LocalZooSpacing.current
+    val animatedCardColor by animateColorAsState(
+        targetValue = if (sighting.isFound) Color(0xFFE8F5E9) else Color(0xFFF5F5F5),
+        animationSpec = spring(),
+        label = "animalCardBackground"
+    )
+
+    val animatedTextColor by animateColorAsState(
+        targetValue = if (sighting.isFound) Color(0xFF2E7D32) else Color.Black,
+        animationSpec = spring(),
+        label = "animalCardText"
+    )
+
     val imageModel = sighting.photoPath ?: sighting.imageUrl
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .animateContentSize(animationSpec = spring())
             .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = cardColor)
+        colors = CardDefaults.cardColors(containerColor = animatedCardColor)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(spacing.medium),
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
@@ -42,7 +67,7 @@ fun AnimalCard(sighting: Sighting, onClick: () -> Unit) {
                 contentDescription = sighting.name,
                 modifier = Modifier
                     .size(64.dp)
-                    .padding(end = 8.dp)
+                    .padding(end = spacing.small)
             )
 
             Column(modifier = Modifier.weight(1f)) {
@@ -50,10 +75,14 @@ fun AnimalCard(sighting: Sighting, onClick: () -> Unit) {
                     text = sighting.name,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = textColor
+                    color = animatedTextColor
                 )
 
-                if (sighting.isFound && sighting.notes.isNotEmpty()) {
+                AnimatedVisibility(
+                    visible = sighting.isFound && sighting.notes.isNotEmpty(),
+                    enter = fadeIn() + expandHorizontally(),
+                    exit = fadeOut() + shrinkHorizontally()
+                ) {
                     Text(
                         text = sighting.notes,
                         fontSize = 14.sp,
@@ -62,11 +91,15 @@ fun AnimalCard(sighting: Sighting, onClick: () -> Unit) {
                 }
             }
 
-            if (sighting.isFound) {
+            AnimatedVisibility(
+                visible = sighting.isFound,
+                enter = fadeIn() + expandHorizontally(),
+                exit = fadeOut() + shrinkHorizontally()
+            ) {
                 Text(
                     text = stringResource(id = R.string.found_label),
                     fontWeight = FontWeight.Bold,
-                    color = textColor
+                    color = animatedTextColor
                 )
             }
         }

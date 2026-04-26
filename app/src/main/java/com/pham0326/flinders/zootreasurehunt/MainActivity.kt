@@ -37,6 +37,7 @@ import com.pham0326.flinders.zootreasurehunt.ui.screens.SettingsScreen
 import com.pham0326.flinders.zootreasurehunt.ui.theme.ZooTreasureHuntTheme
 import com.pham0326.flinders.zootreasurehunt.viewmodel.ZooViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import android.util.Log
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -71,6 +72,12 @@ fun ZooApp() {
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+
+    LaunchedEffect(currentRoute) {
+        currentRoute?.let { route ->
+            Log.d("ZooNavigation", "Current screen: $route")
+        }
+    }
 
     LaunchedEffect(Unit) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
