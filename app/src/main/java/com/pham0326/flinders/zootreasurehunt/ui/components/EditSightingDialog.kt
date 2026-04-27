@@ -33,13 +33,24 @@ fun EditSightingDialog(
     onDismiss: () -> Unit,
     onSave: (Sighting) -> Unit
 ) {
-    var notesText by remember { mutableStateOf(sighting.notes) }
-    var isFoundChecked by remember { mutableStateOf(sighting.isFound) }
+    var notesText by remember(sighting.id) {
+        mutableStateOf(sighting.notes)
+    }
+
+    var isFoundChecked by remember(sighting.id) {
+        mutableStateOf(sighting.isFound)
+    }
 
     val context = LocalContext.current
     val fileUtils = remember { FileUtils(context) }
-    var currentPhotoPath by remember { mutableStateOf(sighting.photoPath) }
-    var tempPhotoUri by remember { mutableStateOf<Uri?>(null) }
+
+    var currentPhotoPath by remember(sighting.id) {
+        mutableStateOf(sighting.photoPath)
+    }
+
+    var tempPhotoUri by remember(sighting.id) {
+        mutableStateOf<Uri?>(null)
+    }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()

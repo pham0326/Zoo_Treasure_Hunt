@@ -13,7 +13,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
+sealed class ZooUiEvent {
+    data class SightingDeleted(val sighting: Sighting) : ZooUiEvent()
+    data object SightingUpdated : ZooUiEvent()
+}
 @HiltViewModel
 class ZooViewModel @Inject constructor(
     private val sightingRepository: SightingRepository,
@@ -22,6 +29,8 @@ class ZooViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(ZooUiState())
     val uiState: StateFlow<ZooUiState> = _uiState.asStateFlow()
+    private val _uiEvent = MutableSharedFlow<ZooUiEvent>()
+    val uiEvent: SharedFlow<ZooUiEvent> = _uiEvent.asSharedFlow()
 
     private val _rawSightings = MutableStateFlow<List<Sighting>>(emptyList())
 
@@ -52,12 +61,21 @@ class ZooViewModel @Inject constructor(
         viewModelScope.launch {
             sightingRepository.updateSighting(updated)
             _rawSightings.value = sightingRepository.loadSightings()
+            _uiEvent.emit(ZooUiEvent.SightingUpdated)
         }
     }
 
     fun deleteSighting(sighting: Sighting) {
         viewModelScope.launch {
             sightingRepository.deleteSighting(sighting)
+            _rawSightings.value = sightingRepository.loadSightings()
+            _uiEvent.emit(ZooUiEvent.SightingDeleted(sighting))
+        }
+    }
+
+    fun undoDelete(sighting: Sighting) {
+        viewModelScope.launch {
+            sightingRepository.addSighting(sighting)
             _rawSightings.value = sightingRepository.loadSightings()
         }
     }

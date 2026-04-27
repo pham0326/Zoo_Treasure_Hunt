@@ -13,6 +13,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.Alignment
 import com.pham0326.flinders.zootreasurehunt.R
 import com.pham0326.flinders.zootreasurehunt.model.Sighting
 import com.pham0326.flinders.zootreasurehunt.ui.components.SwipeableSighting
@@ -41,15 +44,38 @@ fun ListScreen(
             )
         }
 
-        items(
-            items = sightings,
-            key = { it.id }
-        ) { animal ->
-            SwipeableSighting(
-                sighting = animal,
-                onEditClick = { onEditClick(animal) },
-                onSwipe = { onDelete(animal) }
-            )
+        if (sightings.isEmpty()) {
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillParentMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "No animals found yet 🐾",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Text(
+                        text = "Your zoo treasure hunt list is currently empty.",
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+        } else {
+            items(
+                items = sightings,
+                key = { it.id }
+            ) { animal ->
+                SwipeableSighting(
+                    sighting = animal,
+                    onEditClick = { onEditClick(animal) },
+                    onSwipe = { onDelete(animal) }
+                )
+            }
         }
     }
 }
