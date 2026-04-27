@@ -38,6 +38,12 @@ import com.pham0326.flinders.zootreasurehunt.ui.theme.ZooTreasureHuntTheme
 import com.pham0326.flinders.zootreasurehunt.viewmodel.ZooViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import android.util.Log
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.runtime.remember
+import com.pham0326.flinders.zootreasurehunt.viewmodel.ZooUiEvent
+import androidx.compose.material3.SnackbarDuration
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -58,6 +64,7 @@ fun ZooApp() {
     val navController = rememberNavController()
     val viewModel = viewModel<ZooViewModel>()
     val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val bottomItems = listOf(
         BottomNavItem.Home,
@@ -85,8 +92,35 @@ fun ZooApp() {
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect { event ->
+            when (event) {
+                is ZooUiEvent.SightingUpdated -> {
+                    snackbarHostState.showSnackbar(
+                        message = "Sighting updated"
+                    )
+                }
+
+                is ZooUiEvent.SightingDeleted -> {
+                    val result = snackbarHostState.showSnackbar(
+                        message = "Sighting deleted",
+                        actionLabel = "UNDO",
+                        duration = SnackbarDuration.Long
+                    )
+
+                    if (result == SnackbarResult.ActionPerformed) {
+                        viewModel.undoDelete(event.sighting)
+                    }
+                }
+            }
+        }
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        },
         bottomBar = {
             NavigationBar {
                 bottomItems.forEach { item ->
