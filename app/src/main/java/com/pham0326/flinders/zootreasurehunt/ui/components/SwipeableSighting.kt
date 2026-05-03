@@ -19,13 +19,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.pham0326.flinders.zootreasurehunt.model.Sighting
-import com.pham0326.flinders.zootreasurehunt.ui.components.AnimalCard
 
 @Composable
 fun SwipeableSighting(
     sighting: Sighting,
     onEditClick: () -> Unit,
-    onSwipe: () -> Unit
+    onSwipe: () -> Unit,
+    onCaptureClick: () -> Unit
 ) {
     val dismissState = rememberSwipeToDismissBoxState()
 
@@ -63,7 +63,8 @@ fun SwipeableSighting(
         ) {
             AnimalCard(
                 sighting = sighting,
-                onClick = onEditClick
+                onClick = onEditClick,
+                onCaptureClick = onCaptureClick
             )
         }
     }

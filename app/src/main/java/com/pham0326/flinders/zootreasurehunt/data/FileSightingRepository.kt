@@ -30,23 +30,46 @@ class FileSightingRepository @Inject constructor(
         return listOf(
             Sighting(
                 name = "Lion",
-                imageUrl = "https://wilk0077.github.io/comp2012-images/assets-sm/african-lion-ai.jpg"
+                isFound = false,
+                notes = "",
+                timestamp = System.currentTimeMillis(),
+                imageUrl = "https://wilk0077.github.io/comp2012-images/assets-sm/african-lion-ai.jpg",
+                photoPath = null
             ),
+
             Sighting(
                 name = "Red Panda",
-                imageUrl = "https://wilk0077.github.io/comp2012-images/assets-sm/red-panda-ai.jpg"
+                isFound = false,
+                notes = "",
+                timestamp = System.currentTimeMillis(),
+                imageUrl = "https://wilk0077.github.io/comp2012-images/assets-sm/red-panda-ai.jpg",
+                photoPath = null
             ),
+
             Sighting(
                 name = "Giraffe",
-                imageUrl = "https://wilk0077.github.io/comp2012-images/assets-sm/giraffe-ai.jpg"
+                isFound = false,
+                notes = "",
+                timestamp = System.currentTimeMillis(),
+                imageUrl = "https://wilk0077.github.io/comp2012-images/assets-sm/giraffe-ai.jpg",
+                photoPath = null
             ),
+
             Sighting(
                 name = "Kangaroo",
-                imageUrl = "https://wilk0077.github.io/comp2012-images/assets-sm/red-kangaroo-ai.jpg"
+                isFound = false,
+                notes = "",
+                timestamp = System.currentTimeMillis(),
+                imageUrl = "https://wilk0077.github.io/comp2012-images/assets-sm/red-kangaroo-ai.jpg",
+                photoPath = null
             ),
             Sighting(
                 name = "Penguin",
-                imageUrl = "https://wilk0077.github.io/comp2012-images/assets-sm/penguin-ai.jpg"
+                isFound = false,
+                notes = "",
+                timestamp = System.currentTimeMillis(),
+                imageUrl = "https://wilk0077.github.io/comp2012-images/assets-sm/penguin-ai.jpg",
+                photoPath = null
             )
         )
     }
@@ -86,4 +109,18 @@ class FileSightingRepository @Inject constructor(
         val currentList = loadSightings().filter { it.id != sighting.id }
         saveSightings(currentList)
     }
+
+    override suspend fun updateCapturedImage(name: String, uri: String) {        val currentList = loadSightings()
+
+        val updatedList = currentList.map { sighting ->
+            if (sighting.name == name) {
+                sighting.copy(photoPath = uri)
+            } else {
+                sighting
+            }
+        }
+
+        saveSightings(updatedList)
+    }
 }
+

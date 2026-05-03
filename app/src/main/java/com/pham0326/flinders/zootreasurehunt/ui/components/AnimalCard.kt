@@ -2,18 +2,21 @@ package com.pham0326.flinders.zootreasurehunt.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.shrinkHorizontally
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
@@ -34,9 +37,11 @@ import com.pham0326.flinders.zootreasurehunt.ui.theme.LocalZooSpacing
 @Composable
 fun AnimalCard(
     sighting: Sighting,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onCaptureClick: () -> Unit
 ) {
     val spacing = LocalZooSpacing.current
+
     val animatedCardColor by animateColorAsState(
         targetValue = if (sighting.isFound) Color(0xFFE8F5E9) else Color(0xFFF5F5F5),
         animationSpec = spring(),
@@ -90,6 +95,14 @@ fun AnimalCard(
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.width(spacing.small))
+
+            Button(onClick = onCaptureClick) {
+                Text("Capture")
+            }
+
+            Spacer(modifier = Modifier.width(spacing.small))
 
             AnimatedVisibility(
                 visible = sighting.isFound,
