@@ -99,4 +99,11 @@ class ZooViewModel @Inject constructor(
             isDialogVisible = false
         )
     }
+
+    fun updateCapturedImage(name: String, uri: String) {
+        viewModelScope.launch {
+            sightingRepository.updateCapturedImage(name, uri)
+        }
+    }
+
 }

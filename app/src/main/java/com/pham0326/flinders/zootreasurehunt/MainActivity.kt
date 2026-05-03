@@ -15,12 +15,19 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -36,14 +43,12 @@ import com.pham0326.flinders.zootreasurehunt.ui.screens.ListScreen
 import com.pham0326.flinders.zootreasurehunt.ui.screens.SettingsScreen
 import com.pham0326.flinders.zootreasurehunt.ui.theme.ZooTreasureHuntTheme
 import com.pham0326.flinders.zootreasurehunt.viewmodel.ZooViewModel
+import com.pham0326.flinders.zootreasurehunt.viewmodel.ZooUiEvent
 import dagger.hilt.android.AndroidEntryPoint
 import android.util.Log
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
-import androidx.compose.runtime.remember
-import com.pham0326.flinders.zootreasurehunt.viewmodel.ZooUiEvent
-import androidx.compose.material3.SnackbarDuration
+import android.net.Uri
+import androidx.core.content.FileProvider
+import java.io.File
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -61,10 +66,27 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun ZooApp() {
+
     val navController = rememberNavController()
     val viewModel = viewModel<ZooViewModel>()
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    var imageUri by remember { mutableStateOf<Uri?>(null) }
+    var currentAnimal by remember { mutableStateOf<com.pham0326.flinders.zootreasurehunt.model.Sighting?>(null) }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && imageUri != null && currentAnimal != null) {
+            viewModel.updateCapturedImage(
+                currentAnimal!!.name,
+                imageUri.toString()
+            )
+        }
+    }
 
     val bottomItems = listOf(
         BottomNavItem.Home,
@@ -72,13 +94,30 @@ fun ZooApp() {
         BottomNavItem.About
     )
 
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = { }
-    )
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        val uri = imageUri
+        if (granted && uri != null) {
+            cameraLauncher.launch(uri)
+        }
+    }
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+
+    fun createImageUri(): Uri {
+        val imageFolder = File(context.cacheDir, "captured_images")
+        imageFolder.mkdirs()
+
+        val file = File(imageFolder, "animal_${System.currentTimeMillis()}.jpg")
+
+        return FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
+    }
 
     LaunchedEffect(currentRoute) {
         currentRoute?.let { route ->
@@ -88,7 +127,7 @@ fun ZooApp() {
 
     LaunchedEffect(Unit) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            cameraPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 
@@ -199,6 +238,13 @@ fun ZooApp() {
                     },
                     onDelete = { animal ->
                         viewModel.deleteSighting(animal)
+                    },
+                    onCaptureClick = { animal ->
+                        currentAnimal = animal
+                        val uri = createImageUri()
+                        imageUri = uri
+
+                        cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
                     }
                 )
             }
