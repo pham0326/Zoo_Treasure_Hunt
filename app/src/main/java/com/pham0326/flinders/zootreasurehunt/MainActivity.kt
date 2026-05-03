@@ -28,6 +28,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -49,6 +52,12 @@ import android.util.Log
 import android.net.Uri
 import androidx.core.content.FileProvider
 import java.io.File
+import android.content.Context
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import kotlin.math.sqrt
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -71,11 +80,11 @@ fun ZooApp() {
     val viewModel = viewModel<ZooViewModel>()
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-
     val context = androidx.compose.ui.platform.LocalContext.current
-
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var currentAnimal by remember { mutableStateOf<com.pham0326.flinders.zootreasurehunt.model.Sighting?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
+    val hapticFeedback = LocalHapticFeedback.current
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
@@ -152,6 +161,49 @@ fun ZooApp() {
                     }
                 }
             }
+        }
+    }
+
+    DisposableEffect(Unit) {
+        val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+
+        var lastShakeTime = 0L
+
+        val sensorListener = object : SensorEventListener {
+            override fun onSensorChanged(event: SensorEvent?) {
+                if (event?.sensor?.type != Sensor.TYPE_ACCELEROMETER) return
+
+                val x = event.values[0]
+                val y = event.values[1]
+                val z = event.values[2]
+
+                val acceleration = sqrt(x * x + y * y + z * z)
+                val now = System.currentTimeMillis()
+
+                if (acceleration > 22 && now - lastShakeTime > 1000) {
+                    lastShakeTime = now
+
+                    if (searchQuery.isNotEmpty()) {
+                        searchQuery = ""
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    }
+                }
+            }
+
+            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+        }
+
+        if (accelerometer != null) {
+            sensorManager.registerListener(
+                sensorListener,
+                accelerometer,
+                SensorManager.SENSOR_DELAY_UI
+            )
+        }
+
+        onDispose {
+            sensorManager.unregisterListener(sensorListener)
         }
     }
 
@@ -233,6 +285,8 @@ fun ZooApp() {
             composable<HomeDestination> {
                 ListScreen(
                     sightings = uiState.sightings,
+                    searchQuery = searchQuery,
+                    onSearchQueryChange = { searchQuery = it },
                     onEditClick = { animal ->
                         viewModel.selectSightingForEdit(animal)
                     },
@@ -243,8 +297,7 @@ fun ZooApp() {
                         currentAnimal = animal
                         val uri = createImageUri()
                         imageUri = uri
-
-                        cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                     }
                 )
             }
