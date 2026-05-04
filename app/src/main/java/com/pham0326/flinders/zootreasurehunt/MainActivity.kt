@@ -57,6 +57,7 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import kotlinx.coroutines.launch
 import kotlin.math.sqrt
 
 @AndroidEntryPoint
@@ -187,6 +188,11 @@ fun ZooApp() {
                     if (searchQuery.isNotEmpty()) {
                         searchQuery = ""
                         hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+
+                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                            snackbarHostState.showSnackbar("Filter cleared by shaking phone")
+
+                        }
                     }
                 }
             }
