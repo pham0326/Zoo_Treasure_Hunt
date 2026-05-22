@@ -12,5 +12,7 @@ data class Sighting(
     val imageUrl: String = "https://wilk0077.github.io/comp2012-images/assets-sm/african-lion-ai.jpg",
     val photoPath: String? = null,
     var timestamp: Long,
-    var capturedImageUri: String? = null
+    var capturedImageUri: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null
 )

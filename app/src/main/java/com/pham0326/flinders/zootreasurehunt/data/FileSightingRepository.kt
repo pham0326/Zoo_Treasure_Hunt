@@ -1,14 +1,13 @@
 package com.pham0326.flinders.zootreasurehunt.data
-
-import android.content.Context
 import com.pham0326.flinders.zootreasurehunt.model.Sighting
+import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.File
-import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.io.File
+import javax.inject.Inject
 
 class FileSightingRepository @Inject constructor(
     @ApplicationContext private val context: Context
@@ -34,34 +33,39 @@ class FileSightingRepository @Inject constructor(
                 notes = "",
                 timestamp = System.currentTimeMillis(),
                 imageUrl = "https://wilk0077.github.io/comp2012-images/assets-sm/african-lion-ai.jpg",
-                photoPath = null
+                photoPath = null,
+                latitude = -34.9132,
+                longitude = 138.6066
             ),
-
             Sighting(
                 name = "Red Panda",
                 isFound = false,
                 notes = "",
                 timestamp = System.currentTimeMillis(),
                 imageUrl = "https://wilk0077.github.io/comp2012-images/assets-sm/red-panda-ai.jpg",
-                photoPath = null
+                photoPath = null,
+                latitude = -34.9145,
+                longitude = 138.6056
             ),
-
             Sighting(
                 name = "Giraffe",
                 isFound = false,
                 notes = "",
                 timestamp = System.currentTimeMillis(),
                 imageUrl = "https://wilk0077.github.io/comp2012-images/assets-sm/giraffe-ai.jpg",
-                photoPath = null
+                photoPath = null,
+                latitude = -34.9137,
+                longitude = 138.6046
             ),
-
             Sighting(
                 name = "Kangaroo",
                 isFound = false,
                 notes = "",
                 timestamp = System.currentTimeMillis(),
                 imageUrl = "https://wilk0077.github.io/comp2012-images/assets-sm/red-kangaroo-ai.jpg",
-                photoPath = null
+                photoPath = null,
+                latitude = -34.9155,
+                longitude = 138.6063
             ),
             Sighting(
                 name = "Penguin",
@@ -69,7 +73,9 @@ class FileSightingRepository @Inject constructor(
                 notes = "",
                 timestamp = System.currentTimeMillis(),
                 imageUrl = "https://wilk0077.github.io/comp2012-images/assets-sm/penguin-ai.jpg",
-                photoPath = null
+                photoPath = null,
+                latitude = -34.9145,
+                longitude = 138.6038
             )
         )
     }
@@ -77,9 +83,7 @@ class FileSightingRepository @Inject constructor(
     override suspend fun loadSightings(): List<Sighting> {
         return withContext(Dispatchers.IO) {
             val file = File(context.filesDir, fileName)
-
             if (!file.exists()) return@withContext getDefaultSightings()
-
             try {
                 val jsonString = context.openFileInput(fileName)
                     .bufferedReader()
@@ -120,8 +124,6 @@ class FileSightingRepository @Inject constructor(
                 sighting
             }
         }
-
         saveSightings(updatedList)
     }
 }
-
