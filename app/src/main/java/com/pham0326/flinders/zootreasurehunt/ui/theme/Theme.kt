@@ -1,37 +1,34 @@
 package com.pham0326.flinders.zootreasurehunt.ui.theme
 
-import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.graphics.Color
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+private val NocturnalDarkColorScheme = darkColorScheme(
+    primary = Color(0xFFFFB74D),
+    onPrimary = Color(0xFF1B1B2F),
+    primaryContainer = Color(0xFF3E3E5C),
+    onPrimaryContainer = Color(0xFFFFE0B2),
+    surface = Color(0xFF1B1B2F),
+    onSurface = Color(0xFFE8E8F0),
+    background = Color(0xFF0F0F1A),
+    onBackground = Color(0xFFE8E8F0),
+    secondary = Color(0xFF9FA8DA),
+    onSecondary = Color(0xFF1B1B2F),
+    surfaceVariant = Color(0xFF2A2A3E),
+    onSurfaceVariant = Color(0xFFBDBDD0),
+    error = Color(0xFFCF6679),
+    onError = Color(0xFF1B1B2F)
 )
 
-private val LightColorScheme = lightColorScheme(
+private val SafariLightColorScheme = lightColorScheme(
     primary = Purple40,
     secondary = PurpleGrey40,
     tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
 )
 
 @Composable
@@ -40,9 +37,9 @@ fun ZooTreasureHuntTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) {
-        DarkColorScheme
+        NocturnalDarkColorScheme
     } else {
-        LightColorScheme
+        SafariLightColorScheme
     }
 
     CompositionLocalProvider(
