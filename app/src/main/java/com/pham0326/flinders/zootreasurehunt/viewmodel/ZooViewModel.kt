@@ -1,14 +1,17 @@
 package com.pham0326.flinders.zootreasurehunt.viewmodel
 
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import com.pham0326.flinders.zootreasurehunt.data.SettingsRepository
 import com.pham0326.flinders.zootreasurehunt.data.SightingRepository
 import com.pham0326.flinders.zootreasurehunt.model.Sighting
 import com.pham0326.flinders.zootreasurehunt.model.ZooUiState
-import com.pham0326.flinders.zootreasurehunt.sensors.LightSensorManager
 import com.pham0326.flinders.zootreasurehunt.sensors.ShakeDetector
+import com.pham0326.flinders.zootreasurehunt.sensors.LightSensorManager
+import com.pham0326.flinders.zootreasurehunt.sensors.LocationProvider
 import com.pham0326.flinders.zootreasurehunt.sensors.StepCounterManager
-import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -18,8 +21,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 
 sealed class ZooUiEvent {
     data class SightingDeleted(val sighting: Sighting) : ZooUiEvent()
@@ -29,30 +30,42 @@ sealed class ZooUiEvent {
     data object PedometerReset : ZooUiEvent()
 }
 
+sealed class ProximityResult {
+    data class Allowed(val distanceMetres: Float) : ProximityResult()
+    data class TooFar(val animalName: String, val distanceMetres: Float) : ProximityResult()
+    data object PermissionDenied : ProximityResult()
+    data object NoLocationYet : ProximityResult()
+    data class NoCoordinates(val animalName: String) : ProximityResult()
+}
+
 @HiltViewModel
 class ZooViewModel @Inject constructor(
     private val sightingRepository: SightingRepository,
     private val settingsRepository: SettingsRepository,
     private val shakeDetector: ShakeDetector,
     private val lightSensorManager: LightSensorManager,
-    private val stepCounterManager: StepCounterManager
+    private val stepCounterManager: StepCounterManager,
+    private val locationProvider: LocationProvider
 ) : ViewModel() {
 
+    companion object {
+        const val PROXIMITY_THRESHOLD_M = 50f
+    }
     private val _uiState = MutableStateFlow(ZooUiState())
     val uiState: StateFlow<ZooUiState> = _uiState.asStateFlow()
     private val _uiEvent = MutableSharedFlow<ZooUiEvent>()
     val uiEvent: SharedFlow<ZooUiEvent> = _uiEvent.asSharedFlow()
+
     private val _rawSightings = MutableStateFlow<List<Sighting>>(emptyList())
+    val currentLocation = locationProvider.currentLocation
 
     init {
-        // Load the persisted sightings once
         viewModelScope.launch {
             _rawSightings.value = sightingRepository.loadSightings()
         }
 
         viewModelScope.launch {
-            combine(_rawSightings, settingsRepository.sortByNameFlow) {
-                list, sortByName ->
+            combine(_rawSightings, settingsRepository.sortByNameFlow) { list, sortByName ->
                 val sorted = if (sortByName) {
                     list.sortedBy { it.name }
                 } else {
@@ -73,14 +86,37 @@ class ZooViewModel @Inject constructor(
                 }
             }
         }
+
         observeShakeEvents()
         observeLightSensor()
         observeStepCounter()
 
-        // Start sensors. Step counter requires runtime permission.
         shakeDetector.start()
         lightSensorManager.start()
         stepCounterManager.start()
+    }
+
+    fun startLocationUpdates() {
+        locationProvider.start()
+    }
+
+    fun checkProximity(animal: Sighting): ProximityResult {
+        val lat = animal.latitude
+        val lon = animal.longitude
+        if (lat == null || lon == null) {
+            return ProximityResult.NoCoordinates(animal.name)
+        }
+        if (!locationProvider.hasPermission()) {
+            return ProximityResult.PermissionDenied
+        }
+        val distance = locationProvider.distanceTo(lat, lon)
+            ?: return ProximityResult.NoLocationYet
+
+        return if (distance <= PROXIMITY_THRESHOLD_M) {
+            ProximityResult.Allowed(distance)
+        } else {
+            ProximityResult.TooFar(animal.name, distance)
+        }
     }
 
     private fun observeShakeEvents() {
@@ -110,6 +146,7 @@ class ZooViewModel @Inject constructor(
             }
         }
     }
+
     private fun observeStepCounter() {
         viewModelScope.launch {
             combine(
@@ -133,12 +170,7 @@ class ZooViewModel @Inject constructor(
             _uiEvent.emit(ZooUiEvent.SightingUpdated)
         }
     }
-    fun updateCapturedImage(name: String, uri: String) {
-        viewModelScope.launch {
-            sightingRepository.updateCapturedImage(name, uri)
-            _rawSightings.value = sightingRepository.loadSightings()
-        }
-    }
+
     fun deleteSighting(sighting: Sighting) {
         viewModelScope.launch {
             sightingRepository.deleteSighting(sighting)
@@ -146,22 +178,31 @@ class ZooViewModel @Inject constructor(
             _uiEvent.emit(ZooUiEvent.SightingDeleted(sighting))
         }
     }
+
     fun undoDelete(sighting: Sighting) {
         viewModelScope.launch {
             sightingRepository.addSighting(sighting)
             _rawSightings.value = sightingRepository.loadSightings()
         }
     }
+
     fun toggleSortOrder(sortByName: Boolean) {
         viewModelScope.launch {
             settingsRepository.setSortByName(sortByName)
         }
     }
+
     fun selectSightingForEdit(sighting: Sighting?) {
         _uiState.value = _uiState.value.copy(
             selectedSighting = sighting,
             isDialogVisible = sighting != null
         )
+    }
+    fun updateCapturedImage(name: String, uri: String) {
+        viewModelScope.launch {
+            sightingRepository.updateCapturedImage(name, uri)
+            _rawSightings.value = sightingRepository.loadSightings()
+        }
     }
     fun dismissDialog() {
         _uiState.value = _uiState.value.copy(
@@ -169,6 +210,7 @@ class ZooViewModel @Inject constructor(
             isDialogVisible = false
         )
     }
+
     fun resetPedometer() {
         viewModelScope.launch {
             val newBaseline = stepCounterManager.currentTotalSteps()
@@ -179,11 +221,11 @@ class ZooViewModel @Inject constructor(
             }
         }
     }
-
     override fun onCleared() {
         super.onCleared()
         shakeDetector.stop()
         lightSensorManager.stop()
         stepCounterManager.stop()
+        locationProvider.stop()
     }
 }
