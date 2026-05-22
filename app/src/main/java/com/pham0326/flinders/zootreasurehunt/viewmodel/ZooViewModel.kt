@@ -23,11 +23,7 @@ import javax.inject.Inject
 sealed class ZooUiEvent {
     data class SightingDeleted(val sighting: Sighting) : ZooUiEvent()
     data object SightingUpdated : ZooUiEvent()
-
-    /** The user shook the device while a filter was active. */
     data object FilterClearedByShake : ZooUiEvent()
-
-    /** The user entered or left a nocturnal area (light sensor crossed threshold). */
     data class NocturnalModeChanged(val isNocturnal: Boolean) : ZooUiEvent()
 }
 
@@ -51,7 +47,8 @@ class ZooViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            combine(_rawSightings, settingsRepository.sortByNameFlow) { list, sortByName ->
+            combine(_rawSightings, settingsRepository.sortByNameFlow) {
+                list, sortByName ->
                 val sorted = if (sortByName) {
                     list.sortedBy { it.name }
                 } else {

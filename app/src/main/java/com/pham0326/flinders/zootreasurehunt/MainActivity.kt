@@ -141,9 +141,9 @@ fun ZooApp() {
                 is ZooUiEvent.NocturnalModeChanged -> {
                     snackbarHostState.showSnackbar(
                         if (event.isNocturnal) {
-                            "Nocturnal House detected — rewards paused"
+                            "Nocturnal House detected - rewards paused"
                         } else {
-                            "Bright area detected — safari tracking resumed"
+                            "Bright Area detected - safari tracking resumed"
                         }
                     )
                 }
