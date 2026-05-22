@@ -10,6 +10,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import android.app.Activity
+import android.view.WindowManager
 import com.pham0326.flinders.zootreasurehunt.model.Sighting
 import com.pham0326.flinders.zootreasurehunt.navigation.AboutDestination
 import com.pham0326.flinders.zootreasurehunt.navigation.BottomNavItem
@@ -34,6 +36,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -59,11 +62,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
         setContent {
-            ZooTreasureHuntTheme {
-                ZooApp()
-            }
+            ZooApp()
         }
     }
 }
@@ -77,6 +77,34 @@ fun ZooApp() {
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val hapticFeedback = LocalHapticFeedback.current
+
+    // Reduce screen brightness in nocturnal mode to avoid disturbing nocturnal animals
+
+    DisposableEffect(uiState.isNocturnalMode) {
+        val window = (context as? Activity)?.window
+        val originalBrightness =
+            window?.attributes?.screenBrightness
+                ?: WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+
+        window?.let { w ->
+            val params = w.attributes
+            params.screenBrightness = if (uiState.isNocturnalMode) {
+                0.3f  // 30% — readable but dim
+            } else {
+                WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+            }
+            w.attributes = params
+        }
+
+        onDispose {
+            window?.let { w ->
+                val params = w.attributes
+                params.screenBrightness = originalBrightness
+                w.attributes = params
+            }
+        }
+    }
+
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var currentAnimal by remember { mutableStateOf<Sighting?>(null) }
 
@@ -141,9 +169,9 @@ fun ZooApp() {
                 is ZooUiEvent.NocturnalModeChanged -> {
                     snackbarHostState.showSnackbar(
                         if (event.isNocturnal) {
-                            "Nocturnal House detected — rewards paused"
+                            "Nocturnal House detected - rewards paused"
                         } else {
-                            "Bright area detected — safari tracking resumed"
+                            "Bright area detected - safari tracking resumed"
                         }
                     )
                 }
@@ -175,103 +203,109 @@ fun ZooApp() {
         currentRoute?.let { Log.d("ZooNavigation", "Current screen: $it") }
     }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        bottomBar = {
-            NavigationBar {
-                bottomItems.forEach { item ->
-                    val isSelected = when (item) {
-                        BottomNavItem.Home ->
-                            currentRoute?.contains("HomeDestination") == true
-                        BottomNavItem.Settings ->
-                            currentRoute?.contains("SettingsDestination") == true
-                        BottomNavItem.About ->
-                            currentRoute?.contains("AboutDestination") == true
-                    }
+    ZooTreasureHuntTheme(darkTheme = uiState.isNocturnalMode) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+            bottomBar = {
+                NavigationBar {
+                    bottomItems.forEach { item ->
+                        val isSelected = when (item) {
+                            BottomNavItem.Home ->
+                                currentRoute?.contains("HomeDestination") == true
 
-                    NavigationBarItem(
-                        selected = isSelected,
-                        onClick = {
-                            val destination = when (item) {
-                                BottomNavItem.Home -> HomeDestination
-                                BottomNavItem.Settings -> SettingsDestination
-                                BottomNavItem.About -> AboutDestination
-                            }
-                            navController.navigate(destination) {
-                                popUpTo(navController.graph.startDestinationId) {
-                                    saveState = true
+                            BottomNavItem.Settings ->
+                                currentRoute?.contains("SettingsDestination") == true
+
+                            BottomNavItem.About ->
+                                currentRoute?.contains("AboutDestination") == true
+                        }
+
+                        NavigationBarItem(
+                            selected = isSelected,
+                            onClick = {
+                                val destination = when (item) {
+                                    BottomNavItem.Home -> HomeDestination
+                                    BottomNavItem.Settings -> SettingsDestination
+                                    BottomNavItem.About -> AboutDestination
                                 }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = {
-                            Icon(
-                                imageVector = item.icon,
-                                contentDescription = item.label
-                            )
-                        },
-                        label = {
-                            Text(
-                                text = when (item) {
-                                    BottomNavItem.Home -> stringResource(R.string.home_tab)
-                                    BottomNavItem.Settings -> stringResource(R.string.settings_tab)
-                                    BottomNavItem.About -> stringResource(R.string.about_tab)
+                                navController.navigate(destination) {
+                                    popUpTo(navController.graph.startDestinationId) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                            )
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = item.icon,
+                                    contentDescription = item.label
+                                )
+                            },
+                            label = {
+                                Text(
+                                    text = when (item) {
+                                        BottomNavItem.Home -> stringResource(R.string.home_tab)
+                                        BottomNavItem.Settings -> stringResource(R.string.settings_tab)
+                                        BottomNavItem.About -> stringResource(R.string.about_tab)
+                                    }
+                                )
+                            }
+                        )
+                    }
+                }
+            }
+        )
+
+        { innerPadding ->
+            NavHost(
+                navController = navController,
+                startDestination = HomeDestination,
+                modifier = Modifier.padding(innerPadding)
+            ) {
+                composable<HomeDestination> {
+                    ListScreen(
+                        sightings = uiState.sightings,
+                        searchQuery = uiState.searchQuery,
+                        stepCount = uiState.stepCount,
+                        currentLux = uiState.currentLux,
+                        isNocturnalMode = uiState.isNocturnalMode,
+                        onSearchQueryChange = { viewModel.setSearchQuery(it) },
+                        onEditClick = { animal -> viewModel.selectSightingForEdit(animal) },
+                        onDelete = { animal -> viewModel.deleteSighting(animal) },
+                        onCaptureClick = { animal ->
+                            currentAnimal = animal
+                            val uri = createImageUri()
+                            imageUri = uri
+                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                         }
                     )
                 }
-            }
-        }
-    ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = HomeDestination,
-            modifier = Modifier.padding(innerPadding)
-        ) {
-            composable<HomeDestination> {
-                ListScreen(
-                    sightings = uiState.sightings,
-                    searchQuery = uiState.searchQuery,
-                    stepCount = uiState.stepCount,
-                    currentLux = uiState.currentLux,
-                    isNocturnalMode = uiState.isNocturnalMode,
-                    onSearchQueryChange = { viewModel.setSearchQuery(it) },
-                    onEditClick = { animal -> viewModel.selectSightingForEdit(animal) },
-                    onDelete = { animal -> viewModel.deleteSighting(animal) },
-                    onCaptureClick = { animal ->
-                        currentAnimal = animal
-                        val uri = createImageUri()
-                        imageUri = uri
-                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-                    }
-                )
+
+                composable<SettingsDestination> {
+                    SettingsScreen(
+                        isSortByName = uiState.isSortByName,
+                        onSortChange = { viewModel.toggleSortOrder(it) }
+                    )
+                }
+
+                composable<AboutDestination> {
+                    AboutScreen()
+                }
             }
 
-            composable<SettingsDestination> {
-                SettingsScreen(
-                    isSortByName = uiState.isSortByName,
-                    onSortChange = { viewModel.toggleSortOrder(it) }
-                )
-            }
-
-            composable<AboutDestination> {
-                AboutScreen()
-            }
-        }
-
-        if (uiState.isDialogVisible) {
-            uiState.selectedSighting?.let { sighting ->
-                EditSightingDialog(
-                    sighting = sighting,
-                    onDismiss = { viewModel.dismissDialog() },
-                    onSave = { updatedSighting ->
-                        viewModel.updateSighting(updatedSighting)
-                        viewModel.dismissDialog()
-                    }
-                )
+            if (uiState.isDialogVisible) {
+                uiState.selectedSighting?.let { sighting ->
+                    EditSightingDialog(
+                        sighting = sighting,
+                        onDismiss = { viewModel.dismissDialog() },
+                        onSave = { updatedSighting ->
+                            viewModel.updateSighting(updatedSighting)
+                            viewModel.dismissDialog()
+                        }
+                    )
+                }
             }
         }
     }
