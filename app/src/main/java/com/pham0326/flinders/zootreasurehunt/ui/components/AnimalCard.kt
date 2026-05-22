@@ -1,8 +1,12 @@
 package com.pham0326.flinders.zootreasurehunt.ui.components
 
+import com.pham0326.flinders.zootreasurehunt.R
+import com.pham0326.flinders.zootreasurehunt.model.Sighting
+import com.pham0326.flinders.zootreasurehunt.ui.theme.LocalZooSpacing
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
@@ -19,38 +23,46 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import com.pham0326.flinders.zootreasurehunt.R
-import com.pham0326.flinders.zootreasurehunt.model.Sighting
-import com.pham0326.flinders.zootreasurehunt.ui.theme.LocalZooSpacing
 
 @Composable
 fun AnimalCard(
     sighting: Sighting,
+    isNocturnalMode: Boolean,
     onClick: () -> Unit,
     onCaptureClick: () -> Unit
 ) {
     val spacing = LocalZooSpacing.current
+    val foundTint = if (isNocturnalMode) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        MaterialTheme.colorScheme.tertiaryContainer
+    }
+    val defaultSurface = MaterialTheme.colorScheme.surface
 
     val animatedCardColor by animateColorAsState(
-        targetValue = if (sighting.isFound) Color(0xFFE8F5E9) else Color(0xFFF5F5F5),
-        animationSpec = spring(),
+        targetValue = if (sighting.isFound) foundTint else defaultSurface,
+        animationSpec = if (isNocturnalMode) snap() else spring(),
         label = "animalCardBackground"
     )
 
     val animatedTextColor by animateColorAsState(
-        targetValue = if (sighting.isFound) Color(0xFF2E7D32) else Color.Black,
-        animationSpec = spring(),
+        targetValue = if (sighting.isFound) {
+            MaterialTheme.colorScheme.onPrimaryContainer
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        },
+        animationSpec = if (isNocturnalMode) snap() else spring(),
         label = "animalCardText"
     )
 
@@ -59,7 +71,7 @@ fun AnimalCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .animateContentSize(animationSpec = spring())
+            .animateContentSize(animationSpec = if (isNocturnalMode) snap() else spring())
             .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = animatedCardColor)
     ) {
@@ -91,17 +103,15 @@ fun AnimalCard(
                     Text(
                         text = sighting.notes,
                         fontSize = 14.sp,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
             Spacer(modifier = Modifier.width(spacing.small))
-
             Button(onClick = onCaptureClick) {
                 Text("Capture")
             }
-
             Spacer(modifier = Modifier.width(spacing.small))
 
             AnimatedVisibility(
