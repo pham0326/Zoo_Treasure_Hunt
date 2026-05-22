@@ -1,5 +1,17 @@
 package com.pham0326.flinders.zootreasurehunt
-
+import com.pham0326.flinders.zootreasurehunt.model.Sighting
+import com.pham0326.flinders.zootreasurehunt.navigation.AboutDestination
+import com.pham0326.flinders.zootreasurehunt.navigation.BottomNavItem
+import com.pham0326.flinders.zootreasurehunt.navigation.HomeDestination
+import com.pham0326.flinders.zootreasurehunt.navigation.SettingsDestination
+import com.pham0326.flinders.zootreasurehunt.ui.components.EditSightingDialog
+import com.pham0326.flinders.zootreasurehunt.ui.screens.AboutScreen
+import com.pham0326.flinders.zootreasurehunt.ui.screens.ListScreen
+import com.pham0326.flinders.zootreasurehunt.ui.screens.SettingsScreen
+import com.pham0326.flinders.zootreasurehunt.ui.theme.ZooTreasureHuntTheme
+import com.pham0326.flinders.zootreasurehunt.viewmodel.ProximityResult
+import com.pham0326.flinders.zootreasurehunt.viewmodel.ZooUiEvent
+import com.pham0326.flinders.zootreasurehunt.viewmodel.ZooViewModel
 import android.Manifest
 import android.app.Activity
 import android.net.Uri
@@ -12,8 +24,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -23,6 +38,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -31,30 +47,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.pham0326.flinders.zootreasurehunt.model.Sighting
-import com.pham0326.flinders.zootreasurehunt.navigation.AboutDestination
-import com.pham0326.flinders.zootreasurehunt.navigation.BottomNavItem
-import com.pham0326.flinders.zootreasurehunt.navigation.HomeDestination
-import com.pham0326.flinders.zootreasurehunt.navigation.SettingsDestination
-import com.pham0326.flinders.zootreasurehunt.ui.components.EditSightingDialog
-import com.pham0326.flinders.zootreasurehunt.ui.screens.AboutScreen
-import com.pham0326.flinders.zootreasurehunt.ui.screens.ListScreen
-import com.pham0326.flinders.zootreasurehunt.ui.screens.SettingsScreen
-import com.pham0326.flinders.zootreasurehunt.ui.theme.ZooTreasureHuntTheme
-import com.pham0326.flinders.zootreasurehunt.viewmodel.ZooUiEvent
-import com.pham0326.flinders.zootreasurehunt.viewmodel.ZooViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import java.io.File
 
 @AndroidEntryPoint
@@ -78,9 +85,7 @@ fun ZooApp() {
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val hapticFeedback = LocalHapticFeedback.current
-
-    // Reduce screen brightness in nocturnal mode to avoid disturbing animals
-
+    val coroutineScope = rememberCoroutineScope()
     DisposableEffect(uiState.isNocturnalMode) {
         val window = (context as? Activity)?.window
         val originalBrightness =
@@ -108,6 +113,8 @@ fun ZooApp() {
 
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var currentAnimal by remember { mutableStateOf<Sighting?>(null) }
+    var tooFarDialog by remember { mutableStateOf<ProximityResult.TooFar?>(null) }
+
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
@@ -122,23 +129,37 @@ fun ZooApp() {
         val uri = imageUri
         if (granted && uri != null) cameraLauncher.launch(uri)
     }
+
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { }
+
     val activityPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { }
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) viewModel.startLocationUpdates()
+    }
 
     LaunchedEffect(Unit) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             activityPermissionLauncher.launch(Manifest.permission.ACTIVITY_RECOGNITION)
         }
     }
+
     LaunchedEffect(Unit) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
+
+    LaunchedEffect(Unit) {
+        locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+    }
+
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
             when (event) {
@@ -185,6 +206,30 @@ fun ZooApp() {
             file
         )
     }
+    fun attemptCapture(animal: Sighting) {
+        when (val result = viewModel.checkProximity(animal)) {
+            is ProximityResult.Allowed,
+            is ProximityResult.NoCoordinates -> {
+                currentAnimal = animal
+                val uri = createImageUri()
+                imageUri = uri
+                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+            }
+            is ProximityResult.TooFar -> {
+                tooFarDialog = result
+            }
+            is ProximityResult.PermissionDenied -> {
+                locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            }
+            is ProximityResult.NoLocationYet -> {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(
+                        "Acquiring GPS… please try again in a moment"
+                    )
+                }
+            }
+        }
+    }
 
     val bottomItems = listOf(
         BottomNavItem.Home,
@@ -194,6 +239,7 @@ fun ZooApp() {
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+
     LaunchedEffect(currentRoute) {
         currentRoute?.let { Log.d("ZooNavigation", "Current screen: $it") }
     }
@@ -265,12 +311,7 @@ fun ZooApp() {
                         onSearchQueryChange = { viewModel.setSearchQuery(it) },
                         onEditClick = { animal -> viewModel.selectSightingForEdit(animal) },
                         onDelete = { animal -> viewModel.deleteSighting(animal) },
-                        onCaptureClick = { animal ->
-                            currentAnimal = animal
-                            val uri = createImageUri()
-                            imageUri = uri
-                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-                        }
+                        onCaptureClick = { animal -> attemptCapture(animal) }
                     )
                 }
 
@@ -280,6 +321,7 @@ fun ZooApp() {
                         onSortChange = { viewModel.toggleSortOrder(it) }
                     )
                 }
+
                 composable<AboutDestination> {
                     AboutScreen()
                 }
@@ -297,6 +339,39 @@ fun ZooApp() {
                     )
                 }
             }
+            tooFarDialog?.let { result ->
+                ProximityTooFarDialog(
+                    animalName = result.animalName,
+                    distanceMetres = result.distanceMetres,
+                    onDismiss = { tooFarDialog = null }
+                )
+            }
         }
     }
+}
+
+@Composable
+private fun ProximityTooFarDialog(
+    animalName: String,
+    distanceMetres: Float,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("You're too far away") },
+        text = {
+            Column {
+                Text("You are too far from the $animalName enclosure.")
+                Text(
+                    text = "Distance: ${distanceMetres.toInt()} m  (must be within 50 m)",
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("OK")
+            }
+        }
+    )
 }
