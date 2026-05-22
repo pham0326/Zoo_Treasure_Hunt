@@ -85,6 +85,11 @@ fun ZooApp() {
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var currentAnimal by remember { mutableStateOf<com.pham0326.flinders.zootreasurehunt.model.Sighting?>(null) }
     var searchQuery by remember { mutableStateOf("") }
+    var stepBase by remember { mutableStateOf<Float?>(null) }
+    var stepCount by remember { mutableStateOf(0) }
+    var currentLux by remember { mutableStateOf(100f) }
+    var isNocturnalMode by remember { mutableStateOf(false) }
+
     val hapticFeedback = LocalHapticFeedback.current
 
     val cameraLauncher = rememberLauncherForActivityResult(
@@ -95,6 +100,15 @@ fun ZooApp() {
                 currentAnimal!!.name,
                 imageUri.toString()
             )
+        }
+    }
+    val activityPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { }
+
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            activityPermissionLauncher.launch(Manifest.permission.ACTIVITY_RECOGNITION)
         }
     }
 
@@ -213,6 +227,62 @@ fun ZooApp() {
         }
     }
 
+    DisposableEffect(Unit) {
+        val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        val stepCounter = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
+        val lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT)
+
+        val sensorListener = object : SensorEventListener {
+            override fun onSensorChanged(event: SensorEvent?) {
+                when (event?.sensor?.type) {
+                    Sensor.TYPE_STEP_COUNTER -> {
+                        val totalSteps = event.values[0]
+
+                        if (stepBase == null) {
+                            stepBase = totalSteps
+                        }
+
+                        val rawSteps = (totalSteps - (stepBase ?: totalSteps)).toInt()
+
+                        if (!isNocturnalMode) {
+                            stepCount = rawSteps.coerceAtLeast(0)
+                        }
+                    }
+
+                    Sensor.TYPE_LIGHT -> {
+                        currentLux = event.values[0]
+                        val dark = currentLux < 10f
+
+                        if (dark != isNocturnalMode) {
+                            isNocturnalMode = dark
+
+                            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                                snackbarHostState.showSnackbar(
+                                    if (dark) {
+                                        "Nocturnal House detected - rewards paused"
+                                    } else {
+                                        "Bright area detected - safari tracking resumed"
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+        }
+        stepCounter?.let {
+            sensorManager.registerListener(sensorListener, it, SensorManager.SENSOR_DELAY_NORMAL)
+        }
+        lightSensor?.let {
+            sensorManager.registerListener(sensorListener, it, SensorManager.SENSOR_DELAY_NORMAL)
+        }
+        onDispose {
+            sensorManager.unregisterListener(sensorListener)
+        }
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         snackbarHost = {
@@ -292,6 +362,9 @@ fun ZooApp() {
                 ListScreen(
                     sightings = uiState.sightings,
                     searchQuery = searchQuery,
+                    stepCount = stepCount,
+                    currentLux = currentLux,
+                    isNocturnalMode = isNocturnalMode,
                     onSearchQueryChange = { searchQuery = it },
                     onEditClick = { animal ->
                         viewModel.selectSightingForEdit(animal)
