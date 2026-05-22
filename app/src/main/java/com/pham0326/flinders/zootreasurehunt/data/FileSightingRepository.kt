@@ -110,7 +110,8 @@ class FileSightingRepository @Inject constructor(
         saveSightings(currentList)
     }
 
-    override suspend fun updateCapturedImage(name: String, uri: String) {        val currentList = loadSightings()
+    override suspend fun updateCapturedImage(name: String, uri: String) {
+        val currentList = loadSightings()
 
         val updatedList = currentList.map { sighting ->
             if (sighting.name == name) {

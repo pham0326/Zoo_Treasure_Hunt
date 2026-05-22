@@ -146,7 +146,8 @@ private fun SafariProgressCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = if (isNocturnalMode) "🌙 Nocturnal House Mode" else "☀️ Safari Fitness Mode",
+                text = if (isNocturnalMode) "🌙 Nocturnal House Mode"
+                else "☀️ Safari Fitness Mode",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = textColor
