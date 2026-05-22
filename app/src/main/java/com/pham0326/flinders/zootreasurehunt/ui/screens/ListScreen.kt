@@ -1,5 +1,7 @@
 package com.pham0326.flinders.zootreasurehunt.ui.screens
-
+import com.pham0326.flinders.zootreasurehunt.R
+import com.pham0326.flinders.zootreasurehunt.model.Sighting
+import com.pham0326.flinders.zootreasurehunt.ui.components.SwipeableSighting
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -8,21 +10,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.pham0326.flinders.zootreasurehunt.R
-import com.pham0326.flinders.zootreasurehunt.model.Sighting
-import com.pham0326.flinders.zootreasurehunt.ui.components.SwipeableSighting
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 
 @Composable
 fun ListScreen(
@@ -42,13 +41,7 @@ fun ListScreen(
 
     val listState = rememberLazyListState()
     val estimatedDistance = (stepCount * 0.8).toInt()
-
-    val badge = when {
-        stepCount >= 1000 -> "Safari Champion 🏆"
-        stepCount >= 500 -> "Trail Explorer 🦁"
-        stepCount >= 100 -> "Zoo Walker 🐾"
-        else -> "New Explorer 🌱"
-    }
+    val badge = badgeFor(stepCount, isNocturnalMode)
 
     LazyColumn(
         state = listState,
@@ -65,6 +58,10 @@ fun ListScreen(
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
+            if (isNocturnalMode) {
+                NocturnalQuietBanner()
+            }
+
             SafariProgressCard(
                 stepCount = stepCount,
                 estimatedDistance = estimatedDistance,
@@ -76,8 +73,8 @@ fun ListScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = onSearchQueryChange,
-                label = { Text("Filter animals") },
-                placeholder = { Text("Search by animal name") },
+                label = { Text(stringResource(R.string.filter_label)) },
+                placeholder = { Text(stringResource(R.string.filter_placeholder)) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 16.dp, bottom = 16.dp)
@@ -92,30 +89,54 @@ fun ListScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "No matching animals 🐾",
+                        text = stringResource(R.string.empty_no_match),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold
                     )
-
                     Text(
-                        text = "Shake the device to reset the filter.",
+                        text = stringResource(R.string.empty_shake_hint),
                         fontSize = 14.sp,
                         modifier = Modifier.padding(top = 8.dp)
                     )
                 }
             }
         } else {
-            items(
-                items = filteredSightings,
-                key = { it.id }
-            ) { animal ->
+            items(items = filteredSightings, key = { it.id }) { animal ->
                 SwipeableSighting(
                     sighting = animal,
+                    isNocturnalMode = isNocturnalMode,
                     onEditClick = { onEditClick(animal) },
                     onSwipe = { onDelete(animal) },
                     onCaptureClick = { onCaptureClick(animal) }
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun NocturnalQuietBanner() {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.nocturnal_banner_title),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Text(
+                text = stringResource(R.string.nocturnal_banner_body),
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.padding(top = 4.dp)
+            )
         }
     }
 }
@@ -128,56 +149,46 @@ private fun SafariProgressCard(
     currentLux: Float,
     isNocturnalMode: Boolean
 ) {
-    val backgroundColor = if (isNocturnalMode) {
-        Color(0xFF1B1B2F)
-    } else {
-        Color(0xFFE8F5E9)
-    }
-
-    val textColor = if (isNocturnalMode) {
-        Color.White
-    } else {
-        Color.Black
-    }
-
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = backgroundColor)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = if (isNocturnalMode) "🌙 Nocturnal House Mode"
-                else "☀️ Safari Fitness Mode",
+                text = if (isNocturnalMode) {
+                    stringResource(R.string.mode_title_nocturnal)
+                } else {
+                    stringResource(R.string.mode_title_safari)
+                },
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = textColor
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Text(
-                text = "Steps: $stepCount",
-                color = textColor,
+                text = stringResource(R.string.steps_label, stepCount),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 8.dp)
             )
-
             Text(
-                text = "Estimated distance: ${estimatedDistance} m",
-                color = textColor
+                text = stringResource(R.string.distance_label, estimatedDistance),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-
             Text(
-                text = "Badge: $badge",
-                color = textColor
+                text = stringResource(R.string.badge_label, badge),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-
             Text(
-                text = "Light level: ${currentLux.toInt()} Lux",
-                color = textColor
+                text = stringResource(R.string.lux_label, currentLux.toInt()),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             if (isNocturnalMode) {
                 Text(
-                    text = "Rewards paused to minimise disruption around nocturnal animals.",
-                    color = textColor,
+                    text = stringResource(R.string.nocturnal_rewards_paused),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 8.dp)
                 )
             }
@@ -185,3 +196,19 @@ private fun SafariProgressCard(
     }
 }
 
+private fun badgeFor(stepCount: Int, isNocturnalMode: Boolean): String {
+    if (isNocturnalMode) {
+        return when {
+            stepCount >= 1000 -> "Champion (quiet mode)"
+            stepCount >= 500 -> "Explorer (quiet mode)"
+            stepCount >= 100 -> "Walker (quiet mode)"
+            else -> "Resting"
+        }
+    }
+    return when {
+        stepCount >= 1000 -> "Safari Champion 🏆"
+        stepCount >= 500 -> "Trail Explorer 🦁"
+        stepCount >= 100 -> "Zoo Walker 🐾"
+        else -> "New Explorer 🌱"
+    }
+}

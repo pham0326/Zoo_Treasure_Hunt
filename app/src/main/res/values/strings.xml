@@ -1,19 +1,32 @@
 <resources>
     <string name="app_name">Zoo Treasure Hunt</string>
+    <string name="home_tab">Home</string>
+    <string name="settings_tab">Settings</string>
+    <string name="about_tab">About</string>
+    <string name="about_text">Zoo Treasure Hunt\nCreated by\nDora Pham</string>
+
     <string name="found_label">FOUND!</string>
+    <string name="filter_label">Filter animals</string>
+    <string name="filter_placeholder">Search by animal name</string>
+    <string name="empty_no_match">No matching animals 🐾</string>
+    <string name="empty_shake_hint">Shake the device to reset the filter.</string>
+
     <string name="edit_animal">Edit Sighting</string>
     <string name="notes_hint">Observation Notes</string>
     <string name="checkbox_found">Mark as Found</string>
     <string name="save_btn">Save</string>
     <string name="cancel_btn">Cancel</string>
-
-    <string name="home_tab">Home</string>
-    <string name="about_tab">About</string>
-    <string name="about_text">Zoo Treasure Hunt\nCreated by\nDora Pham</string>
-
-    <string name="settings_tab">Settings</string>
     <string name="take_photo">Take Photo</string>
     <string name="retake_photo">Retake Photo</string>
     <string name="photo_attached">Photo attached!</string>
 
+    <string name="mode_title_safari">☀️ Safari Fitness Mode</string>
+    <string name="mode_title_nocturnal">🌙 Nocturnal House Mode</string>
+    <string name="steps_label">Steps: %1$d</string>
+    <string name="distance_label">Estimated distance: %1$d m</string>
+    <string name="badge_label">Badge: %1$s</string>
+    <string name="lux_label">Light level: %1$d Lux</string>
+    <string name="nocturnal_rewards_paused">Rewards paused to minimise disruption around nocturnal animals.</string>
+    <string name="nocturnal_banner_title">Quiet - nocturnal animals nearby.</string>
+    <string name="nocturnal_banner_body">Screen dimmed and rewards paused to avoid disturbing the animals.</string>
 </resources>

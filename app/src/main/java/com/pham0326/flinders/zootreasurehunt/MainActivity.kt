@@ -1,27 +1,17 @@
 package com.pham0326.flinders.zootreasurehunt
 
 import android.Manifest
+import android.app.Activity
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import com.pham0326.flinders.zootreasurehunt.model.Sighting
-import com.pham0326.flinders.zootreasurehunt.navigation.AboutDestination
-import com.pham0326.flinders.zootreasurehunt.navigation.BottomNavItem
-import com.pham0326.flinders.zootreasurehunt.navigation.HomeDestination
-import com.pham0326.flinders.zootreasurehunt.navigation.SettingsDestination
-import com.pham0326.flinders.zootreasurehunt.ui.components.EditSightingDialog
-import com.pham0326.flinders.zootreasurehunt.ui.screens.AboutScreen
-import com.pham0326.flinders.zootreasurehunt.ui.screens.ListScreen
-import com.pham0326.flinders.zootreasurehunt.ui.screens.SettingsScreen
-import com.pham0326.flinders.zootreasurehunt.ui.theme.ZooTreasureHuntTheme
-import com.pham0326.flinders.zootreasurehunt.viewmodel.ZooUiEvent
-import com.pham0326.flinders.zootreasurehunt.viewmodel.ZooViewModel
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -34,6 +24,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -51,6 +42,18 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.pham0326.flinders.zootreasurehunt.model.Sighting
+import com.pham0326.flinders.zootreasurehunt.navigation.AboutDestination
+import com.pham0326.flinders.zootreasurehunt.navigation.BottomNavItem
+import com.pham0326.flinders.zootreasurehunt.navigation.HomeDestination
+import com.pham0326.flinders.zootreasurehunt.navigation.SettingsDestination
+import com.pham0326.flinders.zootreasurehunt.ui.components.EditSightingDialog
+import com.pham0326.flinders.zootreasurehunt.ui.screens.AboutScreen
+import com.pham0326.flinders.zootreasurehunt.ui.screens.ListScreen
+import com.pham0326.flinders.zootreasurehunt.ui.screens.SettingsScreen
+import com.pham0326.flinders.zootreasurehunt.ui.theme.ZooTreasureHuntTheme
+import com.pham0326.flinders.zootreasurehunt.viewmodel.ZooUiEvent
+import com.pham0326.flinders.zootreasurehunt.viewmodel.ZooViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 
@@ -61,9 +64,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            ZooTreasureHuntTheme {
-                ZooApp()
-            }
+            ZooApp()
         }
     }
 }
@@ -77,9 +78,36 @@ fun ZooApp() {
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val hapticFeedback = LocalHapticFeedback.current
+
+    // Reduce screen brightness in nocturnal mode to avoid disturbing animals
+
+    DisposableEffect(uiState.isNocturnalMode) {
+        val window = (context as? Activity)?.window
+        val originalBrightness =
+            window?.attributes?.screenBrightness
+                ?: WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+
+        window?.let { w ->
+            val params = w.attributes
+            params.screenBrightness = if (uiState.isNocturnalMode) {
+                0.3f
+            } else {
+                WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+            }
+            w.attributes = params
+        }
+
+        onDispose {
+            window?.let { w ->
+                val params = w.attributes
+                params.screenBrightness = originalBrightness
+                w.attributes = params
+            }
+        }
+    }
+
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var currentAnimal by remember { mutableStateOf<Sighting?>(null) }
-
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
@@ -94,11 +122,9 @@ fun ZooApp() {
         val uri = imageUri
         if (granted && uri != null) cameraLauncher.launch(uri)
     }
-
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { }
-
     val activityPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { }
@@ -108,13 +134,11 @@ fun ZooApp() {
             activityPermissionLauncher.launch(Manifest.permission.ACTIVITY_RECOGNITION)
         }
     }
-
     LaunchedEffect(Unit) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
-
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
             when (event) {
@@ -138,13 +162,12 @@ fun ZooApp() {
                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                     snackbarHostState.showSnackbar("Filter cleared by shaking phone")
                 }
-
                 is ZooUiEvent.NocturnalModeChanged -> {
                     snackbarHostState.showSnackbar(
                         if (event.isNocturnal) {
                             "Nocturnal House detected - rewards paused"
                         } else {
-                            "Bright Area detected - safari tracking resumed"
+                            "Bright area detected - safari tracking resumed"
                         }
                     )
                 }
@@ -171,108 +194,108 @@ fun ZooApp() {
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-
     LaunchedEffect(currentRoute) {
         currentRoute?.let { Log.d("ZooNavigation", "Current screen: $it") }
     }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        bottomBar = {
-            NavigationBar {
-                bottomItems.forEach { item ->
-                    val isSelected = when (item) {
-                        BottomNavItem.Home ->
-                            currentRoute?.contains("HomeDestination") == true
-                        BottomNavItem.Settings ->
-                            currentRoute?.contains("SettingsDestination") == true
-                        BottomNavItem.About ->
-                            currentRoute?.contains("AboutDestination") == true
-                    }
+    ZooTreasureHuntTheme(darkTheme = uiState.isNocturnalMode) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+            bottomBar = {
+                NavigationBar {
+                    bottomItems.forEach { item ->
+                        val isSelected = when (item) {
+                            BottomNavItem.Home ->
+                                currentRoute?.contains("HomeDestination") == true
+                            BottomNavItem.Settings ->
+                                currentRoute?.contains("SettingsDestination") == true
+                            BottomNavItem.About ->
+                                currentRoute?.contains("AboutDestination") == true
+                        }
 
-                    NavigationBarItem(
-                        selected = isSelected,
-                        onClick = {
-                            val destination = when (item) {
-                                BottomNavItem.Home -> HomeDestination
-                                BottomNavItem.Settings -> SettingsDestination
-                                BottomNavItem.About -> AboutDestination
-                            }
-                            navController.navigate(destination) {
-                                popUpTo(navController.graph.startDestinationId) {
-                                    saveState = true
+                        NavigationBarItem(
+                            selected = isSelected,
+                            onClick = {
+                                val destination = when (item) {
+                                    BottomNavItem.Home -> HomeDestination
+                                    BottomNavItem.Settings -> SettingsDestination
+                                    BottomNavItem.About -> AboutDestination
                                 }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = {
-                            Icon(
-                                imageVector = item.icon,
-                                contentDescription = item.label
-                            )
-                        },
-                        label = {
-                            Text(
-                                text = when (item) {
-                                    BottomNavItem.Home -> stringResource(R.string.home_tab)
-                                    BottomNavItem.Settings -> stringResource(R.string.settings_tab)
-                                    BottomNavItem.About -> stringResource(R.string.about_tab)
+                                navController.navigate(destination) {
+                                    popUpTo(navController.graph.startDestinationId) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                            )
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = item.icon,
+                                    contentDescription = item.label
+                                )
+                            },
+                            label = {
+                                Text(
+                                    text = when (item) {
+                                        BottomNavItem.Home -> stringResource(R.string.home_tab)
+                                        BottomNavItem.Settings -> stringResource(R.string.settings_tab)
+                                        BottomNavItem.About -> stringResource(R.string.about_tab)
+                                    }
+                                )
+                            }
+                        )
+                    }
+                }
+            }
+        ) { innerPadding ->
+            NavHost(
+                navController = navController,
+                startDestination = HomeDestination,
+                modifier = Modifier.padding(innerPadding)
+            ) {
+                composable<HomeDestination> {
+                    ListScreen(
+                        sightings = uiState.sightings,
+                        searchQuery = uiState.searchQuery,
+                        stepCount = uiState.stepCount,
+                        currentLux = uiState.currentLux,
+                        isNocturnalMode = uiState.isNocturnalMode,
+                        onSearchQueryChange = { viewModel.setSearchQuery(it) },
+                        onEditClick = { animal -> viewModel.selectSightingForEdit(animal) },
+                        onDelete = { animal -> viewModel.deleteSighting(animal) },
+                        onCaptureClick = { animal ->
+                            currentAnimal = animal
+                            val uri = createImageUri()
+                            imageUri = uri
+                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                         }
                     )
                 }
-            }
-        }
-    ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = HomeDestination,
-            modifier = Modifier.padding(innerPadding)
-        ) {
-            composable<HomeDestination> {
-                ListScreen(
-                    sightings = uiState.sightings,
-                    searchQuery = uiState.searchQuery,
-                    stepCount = uiState.stepCount,
-                    currentLux = uiState.currentLux,
-                    isNocturnalMode = uiState.isNocturnalMode,
-                    onSearchQueryChange = { viewModel.setSearchQuery(it) },
-                    onEditClick = { animal -> viewModel.selectSightingForEdit(animal) },
-                    onDelete = { animal -> viewModel.deleteSighting(animal) },
-                    onCaptureClick = { animal ->
-                        currentAnimal = animal
-                        val uri = createImageUri()
-                        imageUri = uri
-                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-                    }
-                )
+
+                composable<SettingsDestination> {
+                    SettingsScreen(
+                        isSortByName = uiState.isSortByName,
+                        onSortChange = { viewModel.toggleSortOrder(it) }
+                    )
+                }
+                composable<AboutDestination> {
+                    AboutScreen()
+                }
             }
 
-            composable<SettingsDestination> {
-                SettingsScreen(
-                    isSortByName = uiState.isSortByName,
-                    onSortChange = { viewModel.toggleSortOrder(it) }
-                )
-            }
-
-            composable<AboutDestination> {
-                AboutScreen()
-            }
-        }
-
-        if (uiState.isDialogVisible) {
-            uiState.selectedSighting?.let { sighting ->
-                EditSightingDialog(
-                    sighting = sighting,
-                    onDismiss = { viewModel.dismissDialog() },
-                    onSave = { updatedSighting ->
-                        viewModel.updateSighting(updatedSighting)
-                        viewModel.dismissDialog()
-                    }
-                )
+            if (uiState.isDialogVisible) {
+                uiState.selectedSighting?.let { sighting ->
+                    EditSightingDialog(
+                        sighting = sighting,
+                        onDismiss = { viewModel.dismissDialog() },
+                        onSave = { updatedSighting ->
+                            viewModel.updateSighting(updatedSighting)
+                            viewModel.dismissDialog()
+                        }
+                    )
+                }
             }
         }
     }
