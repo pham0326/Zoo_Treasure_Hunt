@@ -1,7 +1,5 @@
 package com.pham0326.flinders.zootreasurehunt.viewmodel
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.pham0326.flinders.zootreasurehunt.data.SettingsRepository
 import com.pham0326.flinders.zootreasurehunt.data.SightingRepository
 import com.pham0326.flinders.zootreasurehunt.model.Sighting
@@ -9,22 +7,26 @@ import com.pham0326.flinders.zootreasurehunt.model.ZooUiState
 import com.pham0326.flinders.zootreasurehunt.sensors.LightSensorManager
 import com.pham0326.flinders.zootreasurehunt.sensors.ShakeDetector
 import com.pham0326.flinders.zootreasurehunt.sensors.StepCounterManager
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.launch
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 
 sealed class ZooUiEvent {
     data class SightingDeleted(val sighting: Sighting) : ZooUiEvent()
     data object SightingUpdated : ZooUiEvent()
     data object FilterClearedByShake : ZooUiEvent()
     data class NocturnalModeChanged(val isNocturnal: Boolean) : ZooUiEvent()
+    data object PedometerReset : ZooUiEvent()
 }
 
 @HiltViewModel
@@ -41,7 +43,9 @@ class ZooViewModel @Inject constructor(
     private val _uiEvent = MutableSharedFlow<ZooUiEvent>()
     val uiEvent: SharedFlow<ZooUiEvent> = _uiEvent.asSharedFlow()
     private val _rawSightings = MutableStateFlow<List<Sighting>>(emptyList())
+
     init {
+        // Load the persisted sightings once
         viewModelScope.launch {
             _rawSightings.value = sightingRepository.loadSightings()
         }
@@ -60,10 +64,20 @@ class ZooViewModel @Inject constructor(
             }
         }
 
+        viewModelScope.launch {
+            val saved = settingsRepository.stepBaselineFlow.first()
+            stepCounterManager.setBaseline(saved)
+            stepCounterManager.stepBaseline.collect { current ->
+                if (current != null && current != saved) {
+                    settingsRepository.setStepBaseline(current)
+                }
+            }
+        }
         observeShakeEvents()
         observeLightSensor()
         observeStepCounter()
 
+        // Start sensors. Step counter requires runtime permission.
         shakeDetector.start()
         lightSensorManager.start()
         stepCounterManager.start()
@@ -108,7 +122,6 @@ class ZooViewModel @Inject constructor(
             }
         }
     }
-
     fun setSearchQuery(query: String) {
         _uiState.value = _uiState.value.copy(searchQuery = query)
     }
@@ -120,7 +133,12 @@ class ZooViewModel @Inject constructor(
             _uiEvent.emit(ZooUiEvent.SightingUpdated)
         }
     }
-
+    fun updateCapturedImage(name: String, uri: String) {
+        viewModelScope.launch {
+            sightingRepository.updateCapturedImage(name, uri)
+            _rawSightings.value = sightingRepository.loadSightings()
+        }
+    }
     fun deleteSighting(sighting: Sighting) {
         viewModelScope.launch {
             sightingRepository.deleteSighting(sighting)
@@ -128,36 +146,38 @@ class ZooViewModel @Inject constructor(
             _uiEvent.emit(ZooUiEvent.SightingDeleted(sighting))
         }
     }
-
     fun undoDelete(sighting: Sighting) {
         viewModelScope.launch {
             sightingRepository.addSighting(sighting)
             _rawSightings.value = sightingRepository.loadSightings()
         }
     }
-
+    fun toggleSortOrder(sortByName: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setSortByName(sortByName)
+        }
+    }
     fun selectSightingForEdit(sighting: Sighting?) {
         _uiState.value = _uiState.value.copy(
             selectedSighting = sighting,
             isDialogVisible = sighting != null
         )
     }
-    fun toggleSortOrder(sortByName: Boolean) {
-        viewModelScope.launch {
-            settingsRepository.setSortByName(sortByName)
-        }
-    }
-    fun updateCapturedImage(name: String, uri: String) {
-        viewModelScope.launch {
-            sightingRepository.updateCapturedImage(name, uri)
-            _rawSightings.value = sightingRepository.loadSightings()
-        }
-    }
     fun dismissDialog() {
         _uiState.value = _uiState.value.copy(
             selectedSighting = null,
             isDialogVisible = false
         )
+    }
+    fun resetPedometer() {
+        viewModelScope.launch {
+            val newBaseline = stepCounterManager.currentTotalSteps()
+            if (newBaseline != null) {
+                stepCounterManager.setBaseline(newBaseline)
+                settingsRepository.setStepBaseline(newBaseline)
+                _uiEvent.emit(ZooUiEvent.PedometerReset)
+            }
+        }
     }
 
     override fun onCleared() {

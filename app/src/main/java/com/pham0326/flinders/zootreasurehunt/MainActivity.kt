@@ -121,7 +121,6 @@ fun ZooApp() {
                 is ZooUiEvent.SightingUpdated -> {
                     snackbarHostState.showSnackbar("Sighting updated")
                 }
-
                 is ZooUiEvent.SightingDeleted -> {
                     val result = snackbarHostState.showSnackbar(
                         message = "Sighting deleted",
@@ -132,7 +131,9 @@ fun ZooApp() {
                         viewModel.undoDelete(event.sighting)
                     }
                 }
-
+                is ZooUiEvent.PedometerReset -> {
+                    snackbarHostState.showSnackbar("Pedometer reset to 0 steps")
+                }
                 is ZooUiEvent.FilterClearedByShake -> {
                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                     snackbarHostState.showSnackbar("Filter cleared by shaking phone")
