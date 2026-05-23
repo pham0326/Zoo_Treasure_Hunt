@@ -69,6 +69,12 @@ class ZooViewModel @Inject constructor(
     val currentLocation = locationProvider.currentLocation
 
     init {
+        _uiState.value = _uiState.value.copy(
+            isLightSensorAvailable = lightSensorManager.isAvailable,
+            isStepCounterAvailable = stepCounterManager.isAvailable,
+            isLocationAvailable = locationProvider.hasPermission()
+        )
+
         viewModelScope.launch {
             _rawSightings.value = sightingRepository.loadSightings()
         }
@@ -106,6 +112,9 @@ class ZooViewModel @Inject constructor(
 
     fun startLocationUpdates() {
         locationProvider.start()
+        _uiState.value = _uiState.value.copy(
+            isLocationAvailable = locationProvider.hasPermission()
+        )
     }
 
     fun checkProximity(animal: Sighting): ProximityResult {

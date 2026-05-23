@@ -320,7 +320,14 @@ fun ZooApp() {
                 composable<SettingsDestination> {
                     SettingsScreen(
                         isSortByName = uiState.isSortByName,
-                        onSortChange = { viewModel.toggleSortOrder(it) }
+                        stepCount = uiState.stepCount,
+                        currentLux = uiState.currentLux,
+                        isNocturnalMode = uiState.isNocturnalMode,
+                        isLightSensorAvailable = uiState.isLightSensorAvailable,
+                        isStepCounterAvailable = uiState.isStepCounterAvailable,
+                        isLocationAvailable = uiState.isLocationAvailable,
+                        onSortChange = { viewModel.toggleSortOrder(it) },
+                        onResetPedometer = { viewModel.resetPedometer() }
                     )
                 }
 
