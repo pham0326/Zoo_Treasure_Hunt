@@ -13,6 +13,9 @@ import com.pham0326.flinders.zootreasurehunt.ui.theme.ZooTreasureHuntTheme
 import com.pham0326.flinders.zootreasurehunt.viewmodel.ProximityResult
 import com.pham0326.flinders.zootreasurehunt.viewmodel.ZooUiEvent
 import com.pham0326.flinders.zootreasurehunt.viewmodel.ZooViewModel
+import dagger.hilt.android.AndroidEntryPoint
+import java.io.File
+import kotlinx.coroutines.launch
 import android.Manifest
 import android.app.Activity
 import android.net.Uri
@@ -60,9 +63,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import dagger.hilt.android.AndroidEntryPoint
-import java.io.File
-import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -156,15 +156,13 @@ fun ZooApp() {
             activityPermissionLauncher.launch(Manifest.permission.ACTIVITY_RECOGNITION)
         }
     }
-
-    LaunchedEffect(Unit) {
-        locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-    }
-
     LaunchedEffect(Unit) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
+    }
+    LaunchedEffect(Unit) {
+        locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
     }
 
     LaunchedEffect(Unit) {
@@ -242,7 +240,6 @@ fun ZooApp() {
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-
     LaunchedEffect(currentRoute) {
         currentRoute?.let { Log.d("ZooNavigation", "Current screen: $it") }
     }
