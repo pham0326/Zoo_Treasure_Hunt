@@ -34,38 +34,8 @@ class FileSightingRepository @Inject constructor(
                 timestamp = System.currentTimeMillis(),
                 imageUrl = "https://wilk0077.github.io/comp2012-images/assets-sm/african-lion-ai.jpg",
                 photoPath = null,
-                latitude = -34.9132,
-                longitude = 138.6066
-            ),
-            Sighting(
-                name = "Red Panda",
-                isFound = false,
-                notes = "",
-                timestamp = System.currentTimeMillis(),
-                imageUrl = "https://wilk0077.github.io/comp2012-images/assets-sm/red-panda-ai.jpg",
-                photoPath = null,
-                latitude = -34.9145,
+                latitude = -34.9142,
                 longitude = 138.6056
-            ),
-            Sighting(
-                name = "Giraffe",
-                isFound = false,
-                notes = "",
-                timestamp = System.currentTimeMillis(),
-                imageUrl = "https://wilk0077.github.io/comp2012-images/assets-sm/giraffe-ai.jpg",
-                photoPath = null,
-                latitude = -34.9137,
-                longitude = 138.6046
-            ),
-            Sighting(
-                name = "Kangaroo",
-                isFound = false,
-                notes = "",
-                timestamp = System.currentTimeMillis(),
-                imageUrl = "https://wilk0077.github.io/comp2012-images/assets-sm/red-kangaroo-ai.jpg",
-                photoPath = null,
-                latitude = -34.9155,
-                longitude = 138.6063
             ),
             Sighting(
                 name = "Penguin",
@@ -74,8 +44,38 @@ class FileSightingRepository @Inject constructor(
                 timestamp = System.currentTimeMillis(),
                 imageUrl = "https://wilk0077.github.io/comp2012-images/assets-sm/penguin-ai.jpg",
                 photoPath = null,
-                latitude = -34.9145,
-                longitude = 138.6038
+                latitude = -34.9120,
+                longitude = 138.6075
+            ),
+            Sighting(
+                name = "Red Panda",
+                isFound = false,
+                notes = "",
+                timestamp = System.currentTimeMillis(),
+                imageUrl = "https://wilk0077.github.io/comp2012-images/assets-sm/red-panda-ai.jpg",
+                photoPath = null,
+                latitude = -34.9176,
+                longitude = 138.6068
+            ),
+            Sighting(
+                name = "Kangaroo",
+                isFound = false,
+                notes = "",
+                timestamp = System.currentTimeMillis(),
+                imageUrl = "https://wilk0077.github.io/comp2012-images/assets-sm/red-kangaroo-ai.jpg",
+                photoPath = null,
+                latitude = -34.9159,
+                longitude = 138.6020
+            ),
+            Sighting(
+                name = "Giraffe",
+                isFound = false,
+                notes = "",
+                timestamp = System.currentTimeMillis(),
+                imageUrl = "https://wilk0077.github.io/comp2012-images/assets-sm/giraffe-ai.jpg",
+                photoPath = null,
+                latitude = -34.9133,
+                longitude = 138.6042
             )
         )
     }
