@@ -1,17 +1,24 @@
 package com.pham0326.flinders.zootreasurehunt.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.Constraints
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import com.pham0326.flinders.zootreasurehunt.data.SettingsRepository
 import com.pham0326.flinders.zootreasurehunt.data.SightingRepository
 import com.pham0326.flinders.zootreasurehunt.model.Sighting
 import com.pham0326.flinders.zootreasurehunt.model.ZooUiState
-import com.pham0326.flinders.zootreasurehunt.sensors.ShakeDetector
 import com.pham0326.flinders.zootreasurehunt.sensors.LightSensorManager
 import com.pham0326.flinders.zootreasurehunt.sensors.LocationProvider
+import com.pham0326.flinders.zootreasurehunt.sensors.ShakeDetector
 import com.pham0326.flinders.zootreasurehunt.sensors.StepCounterManager
+import com.pham0326.flinders.zootreasurehunt.worker.CongratulationWorker
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -40,6 +47,7 @@ sealed class ProximityResult {
 
 @HiltViewModel
 class ZooViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     private val sightingRepository: SightingRepository,
     private val settingsRepository: SettingsRepository,
     private val shakeDetector: ShakeDetector,
@@ -53,6 +61,7 @@ class ZooViewModel @Inject constructor(
     }
     private val _uiState = MutableStateFlow(ZooUiState())
     val uiState: StateFlow<ZooUiState> = _uiState.asStateFlow()
+
     private val _uiEvent = MutableSharedFlow<ZooUiEvent>()
     val uiEvent: SharedFlow<ZooUiEvent> = _uiEvent.asSharedFlow()
 
@@ -90,7 +99,6 @@ class ZooViewModel @Inject constructor(
         observeShakeEvents()
         observeLightSensor()
         observeStepCounter()
-
         shakeDetector.start()
         lightSensorManager.start()
         stepCounterManager.start()
@@ -119,17 +127,6 @@ class ZooViewModel @Inject constructor(
         }
     }
 
-    private fun observeShakeEvents() {
-        viewModelScope.launch {
-            shakeDetector.shakeEvents.collect {
-                if (_uiState.value.searchQuery.isNotEmpty()) {
-                    _uiState.value = _uiState.value.copy(searchQuery = "")
-                    _uiEvent.emit(ZooUiEvent.FilterClearedByShake)
-                }
-            }
-        }
-    }
-
     private fun observeLightSensor() {
         viewModelScope.launch {
             lightSensorManager.currentLux.collect { lux ->
@@ -147,6 +144,18 @@ class ZooViewModel @Inject constructor(
         }
     }
 
+    private fun observeShakeEvents() {
+        viewModelScope.launch {
+            shakeDetector.shakeEvents.collect {
+                if (_uiState.value.searchQuery.isNotEmpty()) {
+                    _uiState.value = _uiState.value.copy(searchQuery = "")
+                    _uiEvent.emit(ZooUiEvent.FilterClearedByShake)
+                }
+            }
+        }
+    }
+
+
     private fun observeStepCounter() {
         viewModelScope.launch {
             combine(
@@ -159,6 +168,7 @@ class ZooViewModel @Inject constructor(
             }
         }
     }
+
     fun setSearchQuery(query: String) {
         _uiState.value = _uiState.value.copy(searchQuery = query)
     }
@@ -198,17 +208,32 @@ class ZooViewModel @Inject constructor(
             isDialogVisible = sighting != null
         )
     }
-    fun updateCapturedImage(name: String, uri: String) {
-        viewModelScope.launch {
-            sightingRepository.updateCapturedImage(name, uri)
-            _rawSightings.value = sightingRepository.loadSightings()
-        }
-    }
+
     fun dismissDialog() {
         _uiState.value = _uiState.value.copy(
             selectedSighting = null,
             isDialogVisible = false
         )
+    }
+    fun updateCapturedImage(name: String, uri: String) {
+        viewModelScope.launch {
+            sightingRepository.updateCapturedImage(name, uri)
+            _rawSightings.value = sightingRepository.loadSightings()
+            scheduleCongratulationNotification(name)
+        }
+    }
+
+    private fun scheduleCongratulationNotification(animalName: String) {
+        val constraints = Constraints.Builder()
+            .setRequiresBatteryNotLow(true)
+            .build()
+
+        val request = OneTimeWorkRequestBuilder<CongratulationWorker>()
+            .setInputData(workDataOf("ANIMAL_NAME" to animalName))
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(appContext).enqueue(request)
     }
 
     fun resetPedometer() {
