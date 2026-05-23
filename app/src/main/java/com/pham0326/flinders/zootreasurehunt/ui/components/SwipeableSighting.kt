@@ -1,5 +1,6 @@
 package com.pham0326.flinders.zootreasurehunt.ui.components
 import com.pham0326.flinders.zootreasurehunt.model.Sighting
+import com.pham0326.flinders.zootreasurehunt.R
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -15,6 +16,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,7 +52,7 @@ fun SwipeableSighting(
                 contentAlignment = Alignment.CenterStart
             ) {
                 Text(
-                    text = "Delete",
+                    text = stringResource(R.string.delete_btn),
                     color = MaterialTheme.colorScheme.onError,
                     modifier = Modifier.padding(start = 16.dp)
                 )

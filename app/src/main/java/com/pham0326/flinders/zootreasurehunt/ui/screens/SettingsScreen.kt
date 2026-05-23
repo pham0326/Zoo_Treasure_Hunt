@@ -1,5 +1,5 @@
 package com.pham0326.flinders.zootreasurehunt.ui.screens
-
+import com.pham0326.flinders.zootreasurehunt.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,18 +8,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.Composable
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 
 @Composable
 fun SettingsScreen(
@@ -41,7 +42,7 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text = "Settings",
+            text = stringResource(R.string.settings_title),
             fontSize = 28.sp,
             fontWeight = FontWeight.ExtraBold,
             modifier = Modifier.padding(bottom = 8.dp)
@@ -99,7 +100,7 @@ private fun SortOrderCard(
     isSortByName: Boolean,
     onSortChange: (Boolean) -> Unit
 ) {
-    SectionCard(title = "Sort Order") {
+    SectionCard(title = stringResource(R.string.settings_section_sort)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(vertical = 4.dp)
@@ -109,7 +110,7 @@ private fun SortOrderCard(
                 onClick = { onSortChange(true) }
             )
             Text(
-                text = "Sort by Name",
+                text = stringResource(R.string.settings_sort_by_name),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -122,7 +123,7 @@ private fun SortOrderCard(
                 onClick = { onSortChange(false) }
             )
             Text(
-                text = "Sort by Recency / Found Status",
+                text = stringResource(R.string.settings_sort_by_status),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -138,37 +139,43 @@ private fun SensorStatusCard(
     isStepCounterAvailable: Boolean,
     isLocationAvailable: Boolean
 ) {
-    SectionCard(title = "Sensor Status") {
+    val lightMode = if (isNocturnalMode) {
+        stringResource(R.string.sensor_mode_nocturnal)
+    } else {
+        stringResource(R.string.sensor_mode_safari)
+    }
+
+    SectionCard(title = stringResource(R.string.settings_section_sensor_status)) {
         SensorRow(
-            name = "Light sensor",
+            name = stringResource(R.string.sensor_light),
             available = isLightSensorAvailable,
             value = if (isLightSensorAvailable) {
-                "${currentLux.toInt()} lux  •  ${if (isNocturnalMode) "Nocturnal" else "Safari"}"
+                stringResource(R.string.sensor_light_value, currentLux.toInt(), lightMode)
             } else null
         )
         SensorRow(
-            name = "Step counter",
+            name = stringResource(R.string.sensor_step),
             available = isStepCounterAvailable,
             value = if (isStepCounterAvailable) {
-                "$stepCount steps this session only"
-            } else "Not present on this device"
+                stringResource(R.string.sensor_step_value, stepCount)
+            } else stringResource(R.string.sensor_step_unavailable)
         )
         SensorRow(
-            name = "Location (GPS)",
+            name = stringResource(R.string.sensor_location),
             available = isLocationAvailable,
             value = if (isLocationAvailable) {
-                "Permission granted, used for proximity check"
-            } else "Permission not granted"
+                stringResource(R.string.sensor_location_granted)
+            } else stringResource(R.string.sensor_location_denied)
         )
         SensorRow(
-            name = "Camera",
+            name = stringResource(R.string.sensor_camera),
             available = true,
-            value = "Permission requested on capture"
+            value = stringResource(R.string.sensor_camera_note)
         )
         SensorRow(
-            name = "Accelerometer",
+            name = stringResource(R.string.sensor_accelerometer),
             available = true,
-            value = "Shake to clear filter"
+            value = stringResource(R.string.sensor_accelerometer_note)
         )
     }
 }
@@ -217,36 +224,36 @@ private fun PedometerControlsCard(
     stepCount: Int,
     onResetPedometer: () -> Unit
 ) {
-    SectionCard(title = "Pedometer Controls") {
+    SectionCard(title = stringResource(R.string.settings_section_pedometer)) {
         Text(
-            text = "Current session: $stepCount steps",
+            text = stringResource(R.string.pedometer_session_label, stepCount),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 12.dp)
         )
         Button(onClick = onResetPedometer) {
-            Text("Reset Pedometer to 0")
+            Text(stringResource(R.string.pedometer_reset_btn))
         }
     }
 }
 
 @Composable
 private fun PermissionsCard() {
-    SectionCard(title = "Permissions Used") {
+    SectionCard(title = stringResource(R.string.settings_section_permissions)) {
         PermissionRow(
-            permission = "Camera",
-            reason = "Take photos of animals you find at the zoo."
+            permission = stringResource(R.string.perm_camera_name),
+            reason = stringResource(R.string.perm_camera_reason)
         )
         PermissionRow(
-            permission = "Notifications",
-            reason = "Celebrate when you capture an animal."
+            permission = stringResource(R.string.perm_notification_name),
+            reason = stringResource(R.string.perm_notification_reason)
         )
         PermissionRow(
-            permission = "Location (Precise)",
-            reason = "Verify you are physically near the exhibit before allowing a sighting."
+            permission = stringResource(R.string.perm_location_name),
+            reason = stringResource(R.string.perm_location_reason)
         )
         PermissionRow(
-            permission = "Physical Activity",
-            reason = "Count steps for the gamified Safari Pedometer."
+            permission = stringResource(R.string.perm_activity_name),
+            reason = stringResource(R.string.perm_activity_reason)
         )
     }
 }
@@ -269,27 +276,25 @@ private fun PermissionRow(permission: String, reason: String) {
 
 @Composable
 private fun PrivacyCard() {
-    SectionCard(title = "Data Privacy") {
+    SectionCard(title = stringResource(R.string.settings_section_privacy)) {
         PrivacyPoint(
-            "Where it is stored?",
-            "All sightings, photos, and step baselines are device-only. " +
-                    "No data is sent to the server."
+            label = stringResource(R.string.privacy_storage_label),
+            body = stringResource(R.string.privacy_storage_body)
         )
         PrivacyPoint(
-            "Who can read it?",
-            "Only this app."
+            label = stringResource(R.string.privacy_access_label),
+            body = stringResource(R.string.privacy_access_body)
         )
         PrivacyPoint(
-            "How to delete it?",
-            "Uninstalling the app removes all data, including photos."
+            label = stringResource(R.string.privacy_delete_label),
+            body = stringResource(R.string.privacy_delete_body)
         )
         PrivacyPoint(
-            "GPS readings",
-            "Location is checked only when you tap Capture, not over time."
+            label = stringResource(R.string.privacy_gps_label),
+            body = stringResource(R.string.privacy_gps_body)
         )
     }
 }
-
 @Composable
 private fun PrivacyPoint(label: String, body: String) {
     Column(modifier = Modifier.padding(vertical = 6.dp)) {

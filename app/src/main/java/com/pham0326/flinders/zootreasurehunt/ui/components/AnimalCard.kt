@@ -1,8 +1,8 @@
 package com.pham0326.flinders.zootreasurehunt.ui.components
-
 import com.pham0326.flinders.zootreasurehunt.R
 import com.pham0326.flinders.zootreasurehunt.model.Sighting
 import com.pham0326.flinders.zootreasurehunt.ui.theme.LocalZooSpacing
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
@@ -110,10 +110,10 @@ fun AnimalCard(
 
             Spacer(modifier = Modifier.width(spacing.small))
             Button(onClick = onCaptureClick) {
-                Text("Capture")
+                Text(stringResource(R.string.capture_btn))
             }
-            Spacer(modifier = Modifier.width(spacing.small))
 
+            Spacer(modifier = Modifier.width(spacing.small))
             AnimatedVisibility(
                 visible = sighting.isFound,
                 enter = fadeIn() + expandHorizontally(),

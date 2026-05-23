@@ -1,4 +1,5 @@
 package com.pham0326.flinders.zootreasurehunt
+
 import com.pham0326.flinders.zootreasurehunt.model.Sighting
 import com.pham0326.flinders.zootreasurehunt.navigation.AboutDestination
 import com.pham0326.flinders.zootreasurehunt.navigation.BottomNavItem
@@ -28,7 +29,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -46,8 +46,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
@@ -61,8 +61,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
 import java.io.File
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -81,11 +81,20 @@ fun ZooApp() {
     val navController = rememberNavController()
     val viewModel: ZooViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
-
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val hapticFeedback = LocalHapticFeedback.current
     val coroutineScope = rememberCoroutineScope()
+
+    val msgSightingUpdated = stringResource(R.string.snack_sighting_updated)
+    val msgSightingDeleted = stringResource(R.string.snack_sighting_deleted)
+    val labelUndo = stringResource(R.string.snack_undo)
+    val msgNocturnalEntered = stringResource(R.string.snack_nocturnal_entered)
+    val msgNocturnalExited = stringResource(R.string.snack_nocturnal_exited)
+    val msgAcquiringGps = stringResource(R.string.snack_acquiring_gps)
+    val msgPedometerReset = stringResource(R.string.snack_pedometer_reset)
+    val msgFilterCleared = stringResource(R.string.snack_filter_cleared)
+
     DisposableEffect(uiState.isNocturnalMode) {
         val window = (context as? Activity)?.window
         val originalBrightness =
@@ -114,7 +123,6 @@ fun ZooApp() {
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var currentAnimal by remember { mutableStateOf<Sighting?>(null) }
     var tooFarDialog by remember { mutableStateOf<ProximityResult.TooFar?>(null) }
-
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
@@ -137,7 +145,6 @@ fun ZooApp() {
     val activityPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { }
-
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -151,25 +158,25 @@ fun ZooApp() {
     }
 
     LaunchedEffect(Unit) {
+        locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+    }
+
+    LaunchedEffect(Unit) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 
     LaunchedEffect(Unit) {
-        locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-    }
-
-    LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
             when (event) {
                 is ZooUiEvent.SightingUpdated -> {
-                    snackbarHostState.showSnackbar("Sighting updated")
+                    snackbarHostState.showSnackbar(msgSightingUpdated)
                 }
                 is ZooUiEvent.SightingDeleted -> {
                     val result = snackbarHostState.showSnackbar(
-                        message = "Sighting deleted",
-                        actionLabel = "UNDO",
+                        message = msgSightingDeleted,
+                        actionLabel = labelUndo,
                         duration = SnackbarDuration.Long
                     )
                     if (result == SnackbarResult.ActionPerformed) {
@@ -177,19 +184,15 @@ fun ZooApp() {
                     }
                 }
                 is ZooUiEvent.PedometerReset -> {
-                    snackbarHostState.showSnackbar("Pedometer reset to 0 steps")
+                    snackbarHostState.showSnackbar(msgPedometerReset)
                 }
                 is ZooUiEvent.FilterClearedByShake -> {
                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                    snackbarHostState.showSnackbar("Filter cleared by shaking phone")
+                    snackbarHostState.showSnackbar(msgFilterCleared)
                 }
                 is ZooUiEvent.NocturnalModeChanged -> {
                     snackbarHostState.showSnackbar(
-                        if (event.isNocturnal) {
-                            "Nocturnal House detected - rewards paused"
-                        } else {
-                            "Bright area detected - safari tracking resumed"
-                        }
+                        if (event.isNocturnal) msgNocturnalEntered else msgNocturnalExited
                     )
                 }
             }
@@ -225,9 +228,7 @@ fun ZooApp() {
             }
             is ProximityResult.NoLocationYet -> {
                 coroutineScope.launch {
-                    snackbarHostState.showSnackbar(
-                        "Acquiring GPS… please try again in a moment"
-                    )
+                    snackbarHostState.showSnackbar(msgAcquiringGps)
                 }
             }
         }
@@ -351,6 +352,7 @@ fun ZooApp() {
                     )
                 }
             }
+
             tooFarDialog?.let { result ->
                 ProximityTooFarDialog(
                     animalName = result.animalName,
@@ -370,19 +372,19 @@ private fun ProximityTooFarDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("You're too far away") },
+        title = { Text(stringResource(R.string.proximity_title)) },
         text = {
             Column {
-                Text("You are too far from the $animalName enclosure.")
+                Text(stringResource(R.string.proximity_body, animalName))
                 Text(
-                    text = "Distance: ${distanceMetres.toInt()} m  (must be within 50 m)",
+                    text = stringResource(R.string.proximity_distance, distanceMetres.toInt()),
                     modifier = Modifier.padding(top = 8.dp)
                 )
             }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("OK")
+                Text(stringResource(R.string.proximity_ok))
             }
         }
     )

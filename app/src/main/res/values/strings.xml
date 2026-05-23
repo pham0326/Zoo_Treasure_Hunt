@@ -1,13 +1,11 @@
 <resources>
     <string name="app_name">Zoo Treasure Hunt</string>
-    <string name="home_tab">Home</string>
-    <string name="settings_tab">Settings</string>
-    <string name="about_tab">About</string>
-    <string name="about_text">Zoo Treasure Hunt\nCreated by\nDora Pham</string>
 
     <string name="found_label">FOUND!</string>
     <string name="filter_label">Filter animals</string>
     <string name="filter_placeholder">Search by animal name</string>
+    <string name="capture_btn">Capture</string>
+    <string name="delete_btn">Delete</string>
     <string name="empty_no_match">No matching animals 🐾</string>
     <string name="empty_shake_hint">Shake the device to reset the filter.</string>
 
@@ -20,6 +18,11 @@
     <string name="retake_photo">Retake Photo</string>
     <string name="photo_attached">Photo attached!</string>
 
+    <string name="home_tab">Home</string>
+    <string name="settings_tab">Settings</string>
+    <string name="about_tab">About</string>
+    <string name="about_text">Zoo Treasure Hunt\nCreated by\nDora Pham</string>
+
     <string name="mode_title_safari">☀️ Safari Fitness Mode</string>
     <string name="mode_title_nocturnal">🌙 Nocturnal House Mode</string>
     <string name="steps_label">Steps: %1$d</string>
@@ -27,6 +30,66 @@
     <string name="badge_label">Badge: %1$s</string>
     <string name="lux_label">Light level: %1$d Lux</string>
     <string name="nocturnal_rewards_paused">Rewards paused to minimise disruption around nocturnal animals.</string>
-    <string name="nocturnal_banner_title">Quiet - nocturnal animals nearby.</string>
-    <string name="nocturnal_banner_body">Screen dimmed and rewards paused to avoid disturbing the animals.</string>
+
+    <string name="nocturnal_banner_title">Quiet — nocturnal animals nearby</string>
+    <string name="nocturnal_banner_body">Screen dimmed and rewards paused to avoid disturbing the exhibit.</string>
+
+    <string name="snack_sighting_updated">Sighting updated</string>
+    <string name="snack_sighting_deleted">Sighting deleted</string>
+    <string name="snack_undo">UNDO</string>
+    <string name="snack_filter_cleared">Filter cleared by shaking phone</string>
+    <string name="snack_pedometer_reset">Pedometer reset to 0 steps</string>
+    <string name="snack_nocturnal_entered">Nocturnal House detected — rewards paused</string>
+    <string name="snack_nocturnal_exited">Bright area detected — safari tracking resumed</string>
+    <string name="snack_acquiring_gps">Acquiring GPS… please try again in a moment</string>
+
+    <string name="proximity_title">You\'re too far away</string>
+    <string name="proximity_body">You are too far from the %1$s enclosure.</string>
+    <string name="proximity_distance">Distance: %1$d m  (must be within 50 m)</string>
+    <string name="proximity_ok">OK</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_section_sort">Sort Order</string>
+    <string name="settings_section_sensor_status">Sensor Status</string>
+    <string name="settings_section_pedometer">Pedometer Controls</string>
+    <string name="settings_section_permissions">Permissions Used</string>
+    <string name="settings_section_privacy">Data Privacy</string>
+
+    <string name="settings_sort_by_name">Sort by Name</string>
+    <string name="settings_sort_by_status">Sort by Recency / Found Status</string>
+
+    <string name="sensor_light">Light sensor</string>
+    <string name="sensor_light_value">%1$d lux  •  %2$s</string>
+    <string name="sensor_step">Step counter</string>
+    <string name="sensor_step_value">%1$d steps this session only</string>
+    <string name="sensor_step_unavailable">Not present on this device</string>
+    <string name="sensor_location">Location (GPS)</string>
+    <string name="sensor_location_granted">Permission granted, used for proximity check</string>
+    <string name="sensor_location_denied">Permission not granted</string>
+    <string name="sensor_camera">Camera</string>
+    <string name="sensor_accelerometer">Accelerometer</string>
+    <string name="sensor_mode_nocturnal">Nocturnal</string>
+    <string name="sensor_mode_safari">Safari</string>
+    <string name="sensor_camera_note">Permission requested on capture</string>
+    <string name="sensor_accelerometer_note">Shake to clear filter</string>
+
+    <string name="pedometer_session_label">Current session: %1$d steps</string>
+    <string name="pedometer_reset_btn">Reset Pedometer to 0</string>
+    <string name="perm_camera_name">Camera</string>
+    <string name="perm_camera_reason">Take photos of animals you find at the zoo.</string>
+    <string name="perm_notification_name">Notifications</string>
+    <string name="perm_notification_reason">Celebrate when you capture an animal.</string>
+    <string name="perm_location_name">Location (Precise)</string>
+    <string name="perm_location_reason">Verify you are physically near the exhibit before allowing a sighting.</string>
+    <string name="perm_activity_name">Physical Activity</string>
+    <string name="perm_activity_reason">Count steps for the gamified Safari Pedometer.</string>
+
+    <string name="privacy_storage_label">Where it is stored?</string>
+    <string name="privacy_storage_body">All sightings, photos, and step baselines are device-only. No data is sent to the server.</string>
+    <string name="privacy_access_label">Who can read it?</string>
+    <string name="privacy_access_body">Only this app.</string>
+    <string name="privacy_delete_label">How to delete it?</string>
+    <string name="privacy_delete_body">Uninstalling the app removes all data, including photos.</string>
+    <string name="privacy_gps_label">GPS readings</string>
+    <string name="privacy_gps_body">Location is checked only when you tap Capture, not over time.</string>
 </resources>
