@@ -1,5 +1,4 @@
 package com.pham0326.flinders.zootreasurehunt.model
-
 data class ZooUiState(
     val sightings: List<Sighting> = emptyList(),
     val isSortByName: Boolean = true,
@@ -9,5 +8,8 @@ data class ZooUiState(
 
     val stepCount: Int = 0,
     val currentLux: Float = 100f,
-    val isNocturnalMode: Boolean = false
+    val isNocturnalMode: Boolean = false,
+    val isLightSensorAvailable: Boolean = false,
+    val isStepCounterAvailable: Boolean = false,
+    val isLocationAvailable: Boolean = false
 )
