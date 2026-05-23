@@ -31,16 +31,16 @@
     <string name="lux_label">Light level: %1$d Lux</string>
     <string name="nocturnal_rewards_paused">Rewards paused to minimise disruption around nocturnal animals.</string>
 
-    <string name="nocturnal_banner_title">Quiet — nocturnal animals nearby</string>
-    <string name="nocturnal_banner_body">Screen dimmed and rewards paused to avoid disturbing the exhibit.</string>
+    <string name="nocturnal_banner_title">Quiet - nocturnal animals nearby</string>
+    <string name="nocturnal_banner_body">Screen dimmed and rewards paused to avoid disturbing the animals.</string>
 
     <string name="snack_sighting_updated">Sighting updated</string>
     <string name="snack_sighting_deleted">Sighting deleted</string>
     <string name="snack_undo">UNDO</string>
     <string name="snack_filter_cleared">Filter cleared by shaking phone</string>
     <string name="snack_pedometer_reset">Pedometer reset to 0 steps</string>
-    <string name="snack_nocturnal_entered">Nocturnal House detected — rewards paused</string>
-    <string name="snack_nocturnal_exited">Bright area detected — safari tracking resumed</string>
+    <string name="snack_nocturnal_entered">Nocturnal House detected - rewards paused</string>
+    <string name="snack_nocturnal_exited">Bright area detected - safari tracking resumed</string>
     <string name="snack_acquiring_gps">Acquiring GPS… please try again in a moment</string>
 
     <string name="proximity_title">You\'re too far away</string>
@@ -80,7 +80,7 @@
     <string name="perm_notification_name">Notifications</string>
     <string name="perm_notification_reason">Celebrate when you capture an animal.</string>
     <string name="perm_location_name">Location (Precise)</string>
-    <string name="perm_location_reason">Verify you are physically near the exhibit before allowing a sighting.</string>
+    <string name="perm_location_reason">Verify you are physically near the animal before allowing a sighting.</string>
     <string name="perm_activity_name">Physical Activity</string>
     <string name="perm_activity_reason">Count steps for the gamified Safari Pedometer.</string>
 
