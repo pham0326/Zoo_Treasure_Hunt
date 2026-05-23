@@ -197,7 +197,8 @@ fun ZooApp() {
     }
 
     fun createImageUri(): Uri {
-        val imageFolder = File(context.cacheDir, "captured_images")
+        val imageFolder = context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES)
+            ?: throw IllegalStateException("External files dir unavailable")
         imageFolder.mkdirs()
         val file = File(imageFolder, "animal_${System.currentTimeMillis()}.jpg")
         return FileProvider.getUriForFile(
@@ -206,6 +207,7 @@ fun ZooApp() {
             file
         )
     }
+
     fun attemptCapture(animal: Sighting) {
         when (val result = viewModel.checkProximity(animal)) {
             is ProximityResult.Allowed,
@@ -335,6 +337,9 @@ fun ZooApp() {
                         onSave = { updatedSighting ->
                             viewModel.updateSighting(updatedSighting)
                             viewModel.dismissDialog()
+                        },
+                        onRequestCapture = { animalToCapture ->
+                            attemptCapture(animalToCapture)
                         }
                     )
                 }
